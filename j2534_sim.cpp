@@ -12,6 +12,8 @@
 
 #include "stdafx.h"
 
+#define F_HIJACK
+
 // this is for straight 0404 mode.  set by VC+ Project
 //#define BUILD_0404						( 1 )
 
@@ -20,13 +22,13 @@
 //#define BUILD_TRANSLATE_0202                ( 1  )
 
 // simple simulation when no hardware
-//#define SIMULATION_MODE 1
+#define SIMULATION_MODE 1
 
 #define FAIL	( 0 )
 #define PASS	( 1 )
 
 // where to write a log file too ( c:\ usually needs admin)
-#define LOG_FILE_FILENAME "C:\\j2534_logger.txt"
+#define LOG_FILE_FILENAME "D:\\j2534_logger.txt"
 
 #include "j2534_sim.h"
 
@@ -65,7 +67,7 @@ BOOL APIENTRY DllMain ( HANDLE hModule,
 
     switch ( ul_reason_for_call ) {
         case DLL_PROCESS_ATTACH:
-
+            LogMsg1 ( "call DLL_PROCESS_ATTACH\n" );
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
         case DLL_PROCESS_DETACH:
@@ -271,6 +273,8 @@ int Load_J2534DLL ( void )
     stPassThrough *pPtr;
     //load the real dll (change to registry key, or popup dialog
 
+    LogMsg1 ( "Load_J2534DLL\n" );
+
     // SCANDAQ
     //allocate some memory
     pPtr = pGlobalPtr = ( stPassThrough* ) malloc ( sizeof ( stPassThrough ) );
@@ -278,6 +282,12 @@ int Load_J2534DLL ( void )
     if ( pPtr == NULL ) {
         return ERR_FAILED;
     }
+
+#ifdef F_HIJACK
+    memset(pPtr, 0, sizeof(stPassThrough));
+
+    return 1;
+#endif
 
     int id;
 
@@ -337,6 +347,57 @@ int Load_J2534DLL ( void )
 
 #define JTYPE extern  long  J2534_SIM_API
 
+JTYPE  PassThruOpen ( void* pName, unsigned long * pDeviceID )
+{
+
+    J2534ERROR ret = J2534_STATUS_NOERROR;
+
+    stPassThrough *pPtr = STATUS_NOERROR ;
+    {
+        char buffer[1024];
+
+        sprintf_s ( buffer, sizeof ( buffer ), "PassThruOpen(%s,0x%lx)\n", pName, pDeviceID );
+        LogMsg1 ( buffer );
+    }
+
+
+    if ( pPtr == NULL )
+    { Load_J2534DLL(); }
+
+
+    if ( pPtr && pGlobalPtr->data.pPassThruOpen ) {
+        ret = ( J2534ERROR ) pPtr->data.pPassThruOpen ( pName, pDeviceID );
+
+        GetJ2534ErrorText ( ret );
+    }
+#ifdef F_HIJACK
+    else {
+        if ( pDeviceID ) {
+            *pDeviceID = ( unsigned long ) 0;
+        }
+    }
+#endif
+
+    return ret;
+}
+
+
+JTYPE  J2534_SIM_API  PassThruClose ( unsigned long DeviceID )
+{
+    J2534ERROR ret = J2534_STATUS_NOERROR;
+
+    LogMsg1 ( "PassThruClose\n" );
+
+    if ( pGlobalPtr && pGlobalPtr->data.pPassThruClose ) {
+        ret = ( J2534ERROR ) pGlobalPtr->data.pPassThruClose ( DeviceID );
+
+        GetJ2534ErrorText ( ret );
+    }
+
+    return ret;
+
+}
+
 JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsigned long Flags, unsigned long Baudrate, unsigned long * pChannelID )
 {
 
@@ -355,7 +416,7 @@ JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsign
     LogMsg2 ( "protocol = %s\n", GetJ2534_PROTOCOLText ( ( J2534_PROTOCOL ) ProtocolID ) );
 
     if ( pPtr && pPtr->data.pPassThruConnect )	{
-
+        LogMsg1 ( "pPtr->data.pPassThruConnect != NULL" );
         ret = ( J2534ERROR ) pPtr->data.pPassThruConnect ( DeviceID, ProtocolID, Flags, Baudrate, &pPtr->ulChannel );
     }
 
@@ -366,6 +427,7 @@ JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsign
 
     if ( pChannelID ) {
         *pChannelID = ( unsigned long ) pGlobalPtr;
+        LogMsg1 ("ChannelID assigned\n");
     }
 
     return ret;
@@ -373,6 +435,10 @@ JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsign
 
 JTYPE PassThruDisconnect ( unsigned long ChannelID )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruDisconnect\n");
+#endif
+
     J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
 
@@ -396,6 +462,9 @@ JTYPE PassThruDisconnect ( unsigned long ChannelID )
 
 JTYPE PassThruReadMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned long * pNumMsgs, unsigned long Timeout )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruDisconnect\n");
+#endif
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
@@ -463,6 +532,10 @@ JTYPE PassThruWriteMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned
 {
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
+#ifdef F_HIJACK
+    LogMsg1("PassThruWriteMsgs\n");
+#endif
+
     stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
 
     if ( pPtr ) {
@@ -526,6 +599,10 @@ JTYPE PassThruWriteMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned
 JTYPE PassThruStartPeriodicMsg ( unsigned long ChannelID, PASSTHRU_MSG * pMsg,
                                  unsigned long * pMsgID, unsigned long TimeInterval )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruStartPeriodicMsg\n");
+#endif
+
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
     stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
@@ -553,6 +630,10 @@ JTYPE PassThruStartPeriodicMsg ( unsigned long ChannelID, PASSTHRU_MSG * pMsg,
 
 JTYPE PassThruStopPeriodicMsg ( unsigned long ChannelID, unsigned long MsgID )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruStopPeriodicMsg\n");
+#endif
+
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
     stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
@@ -579,6 +660,10 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
                                unsigned long FilterType, PASSTHRU_MSG * pMsg, PASSTHRU_MSG * pPatternMsg,
                                PASSTHRU_MSG * pFlowControlMsg, unsigned long * pMsgID )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruStartMsgFilter\n");
+#endif
+
     J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = ( stPassThrough* ) ChannelID;
 
@@ -620,6 +705,10 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
 
         sprintf_s ( buffer, sizeof ( buffer ), "\textradata   = 0x%lx = { ", pMsg->Data );
         LogMsg1 ( buffer );
+#ifdef F_HIJACK
+        // GDS request with a wrong value which is large, so we prevent from the problem by temporary.
+        if (pMsg->ExtraDataIndex < 20)
+#endif        
         PrintBuffer ( pMsg->ExtraDataIndex, &pMsg->Data[pMsg->ExtraDataIndex] );
         LogMsg1 ( "}\n" );
     }
@@ -648,6 +737,10 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
 
         sprintf_s ( buffer, sizeof ( buffer ), "\textradata   = 0x%lx = { ", pPatternMsg->Data );
         LogMsg1 ( buffer );
+#ifdef F_HIJACK
+        // GDS request with a wrong value which is large, so we prevent from the problem by temporary.
+        if (pPatternMsg->ExtraDataIndex < 20)
+#endif
         PrintBuffer ( pPatternMsg->ExtraDataIndex, &pPatternMsg->Data[pPatternMsg->ExtraDataIndex] );
         LogMsg1 ( "}\n" );
     }
@@ -676,6 +769,10 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
 
         sprintf_s ( buffer, sizeof ( buffer ), "\textradata   = 0x%lx = { ", pFlowControlMsg->Data );
         LogMsg1 ( buffer );
+#ifdef F_HIJACK
+        // GDS request with a wrong value which is large, so we prevent from the problem by temporary.
+        if (pFlowControlMsg->ExtraDataIndex < 20)
+#endif
         PrintBuffer ( pFlowControlMsg->ExtraDataIndex, &pFlowControlMsg->Data[pFlowControlMsg->ExtraDataIndex] );
         LogMsg1 ( "}\n" );
     }
@@ -698,6 +795,10 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
 
 JTYPE PassThruStopMsgFilter ( unsigned long ChannelID, unsigned long ulFilterID )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruStopMsgFilter\n");
+#endif
+
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
     char buffer[1024];
@@ -728,6 +829,10 @@ JTYPE PassThruStopMsgFilter ( unsigned long ChannelID, unsigned long ulFilterID 
 
 JTYPE PassThruSetProgrammingVoltage ( unsigned long DeviceID, unsigned long Pin, unsigned long Voltage )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruSetProgrammingVoltage\n");
+#endif
+
     J2534ERROR ret = J2534_STATUS_NOERROR;
     char buffer[1024];
     sprintf_s ( buffer, sizeof ( buffer ), "PassThruSetProgrammingVoltage : DeviceID = %d, Pin = %d, Voltage = %d\n", DeviceID, Pin, Voltage );
@@ -754,6 +859,10 @@ JTYPE PassThruSetProgrammingVoltage ( unsigned long DeviceID, unsigned long Pin,
 
 JTYPE PassThruReadVersion ( unsigned long DeviceID, char *pchFirmwareVersion, char *pchDllVersion, char *pchApiVersion )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruReadVersion\n");
+#endif
+
     J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = pGlobalPtr ;
 
@@ -802,9 +911,72 @@ JTYPE PassThruGetLastError ( char *pErrorDescription )
     return ret;
 }
 
+static void SetIoCtlOutputValue(unsigned long enumIoctlID, void *pInput, void *pOutput)
+{
+        char buffer[16] = {0};
+    
+        switch ( enumIoctlID ) {
+    
+            case GET_CONFIG:
+                break;
+    
+            case SET_CONFIG:
+                break;
+    
+            case READ_VBATT:
+                *(unsigned long*)pOutput = 12;
+                break;
+    
+            case FIVE_BAUD_INIT:
+                break;
+    
+            case FAST_INIT:
+                break;
+    
+#ifdef SET_PIN_USE
+            case SET_PIN_USE:
+                break;
+#endif
+    
+            case CLEAR_TX_BUFFER:
+                break;
+    
+            case CLEAR_RX_BUFFER:
+                break;
+    
+            case CLEAR_PERIODIC_MSGS:
+                break;
+    
+            case CLEAR_MSG_FILTERS:
+                break;
+    
+            case CLEAR_FUNCT_MSG_LOOKUP_TABLE:
+                break;
+    
+            case ADD_TO_FUNCT_MSG_LOOKUP_TABLE:
+                break;
+    
+            case DELETE_FROM_FUNCT_MSG_LOOKUP_TABLE:
+                break;
+    
+            case READ_PROG_VOLTAGE:
+                break;
+    
+            default:
+                //sprintf_s ( buffer, sizeof ( buffer ), "unknow(%ld)", enumIoctlID);
+                break;
+       }
+
+    return;
+}
+
 JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
                       void *pInput, void *pOutput )
 {
+#ifdef F_HIJACK
+    LogMsg1("PassThruIoctl\n");
+#endif
+
     int ret;
 
     stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
@@ -821,8 +993,6 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
         LogMsg1 ( buffer );
     }
 
-
-
 #if !defined ( SIMULATION_MODE )
 
     if ( pPtr && pPtr->data.pPassThruIoctl ) {
@@ -834,58 +1004,14 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
 
         GetJ2534ErrorText ( ret );
     }
-
+#else
+    SetIoCtlOutputValue(IoctlID, NULL, pOutput);
 #endif
 
 
     return ret;
 }
 
-
-
-JTYPE  PassThruOpen ( void* pName, unsigned long * pDeviceID )
-{
-
-    J2534ERROR ret = J2534_STATUS_NOERROR;
-
-    stPassThrough *pPtr = STATUS_NOERROR ;
-    {
-        char buffer[1024];
-
-        sprintf_s ( buffer, sizeof ( buffer ), "PassThruOpen(%s,0x%lx)\n", pName, pDeviceID );
-        LogMsg1 ( buffer );
-    }
-
-
-    if ( pPtr == NULL )
-    { Load_J2534DLL(); }
-
-
-    if ( pPtr, pGlobalPtr->data.pPassThruOpen ) {
-        ret = ( J2534ERROR ) pPtr->data.pPassThruOpen ( pName, pDeviceID );
-
-        GetJ2534ErrorText ( ret );
-    }
-
-    return ret;
-}
-
-
-extern "C"  long J2534_SIM_API  PassThruClose ( unsigned long DeviceID )
-{
-    J2534ERROR ret = J2534_STATUS_NOERROR;
-
-    LogMsg1 ( "PassThruClose" );
-
-    if ( pGlobalPtr && pGlobalPtr->data.pPassThruClose ) {
-        ret = ( J2534ERROR ) pGlobalPtr->data.pPassThruClose ( DeviceID );
-
-        GetJ2534ErrorText ( ret );
-    }
-
-    return ret;
-
-}
 
 #else
 
@@ -1867,6 +1993,8 @@ extern "C"  J2534ERROR J2534_SIM_API PassThruIoctl (
 
 static char *GetJ2534IOCTLIDText ( J2534IOCTLID enumIoctlID )
 {
+    char buffer[16] = {0};
+
     switch ( enumIoctlID ) {
 
         case GET_CONFIG:
@@ -1915,12 +2043,20 @@ static char *GetJ2534IOCTLIDText ( J2534IOCTLID enumIoctlID )
             return "READ_PROG_VOLTAGE";
 
         default:
-            return "unknown";
+#ifdef F_HIJACK
+            sprintf_s ( buffer, sizeof ( buffer ), "unknow(%ld)", enumIoctlID);
+            return buffer;
+#else
+            return "unknow";
+#endif
+
     }
 }
 
 static char *GetJ2534_PROTOCOLText ( J2534_PROTOCOL protocol )
 {
+    char buffer[16] = {0};
+
     switch ( protocol ) {
 
         case J1850VPW:								// J1850VPW Protocol
@@ -1972,13 +2108,27 @@ static char *GetJ2534_PROTOCOLText ( J2534_PROTOCOL protocol )
         //		 IS ADDED.
         case J2534_PROTOCOL_NUM:
 #endif
+#ifdef F_HIJACK
+        case ISO15765_FD_PS:
+            return "ISO15765_FD_PS";
+        case CAN_FD_PS:
+            return "CAN_FD_PS";
+#endif
+
         default:
-            return "unknown";
+#ifdef F_HIJACK
+                sprintf_s ( buffer, sizeof ( buffer ), "unknown(%ld)", protocol);
+                return buffer;
+#else
+                return "unknown";
+#endif
+
     }
 }
 
 static char* GetJ2534IOCTLPARAMIDText ( J2534IOCTLPARAMID value )
 {
+    char buffer[16] = {0};
 
     switch ( value  ) {
         case DATA_RATE:
@@ -2075,7 +2225,13 @@ static char* GetJ2534IOCTLPARAMIDText ( J2534IOCTLPARAMID value )
             return "DATA_BITS";
 
         default:
+#ifdef F_HIJACK
+            sprintf_s ( buffer, sizeof ( buffer ), "unknown(%ld)", value);
+            return buffer;
+#else
             return "GetJ2534IOCTLPARAMIDText unknown";
+#endif            
+            
     }
 }
 

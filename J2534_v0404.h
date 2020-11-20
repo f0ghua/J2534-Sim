@@ -28,6 +28,12 @@
 #define SCI_B_ENGINE						9
 #define SCI_B_TRANS						10
 
+// J2534-2 extend protocols
+#define ISO15765_FD_PS					0x1000C
+#define CAN_FD_PS						0x1000D
+
+
+
 // J2534-2 Pin Switched ProtocolIDs
 #define J1850VPW_PS			/*-2*/			0x8000 // Not supported
 #define J1850PWM_PS			/*-2*/			0x8001 // Not supported
@@ -341,6 +347,9 @@
 #define PASS_FILTER_WITH_TRIGGER	/*DT*/			0x10000005 //DT
 #define BLOCK_FILTER_WITH_TRIGGER	/*DT*/			0x10000006 //DT
 
+// Ensure the packing is one byte (J2534-1 2004 9.2.2)
+#pragma pack(push)
+#pragma pack(1)
 
 /*********************/
 /* Message Structure */
@@ -377,6 +386,9 @@ typedef struct
 	unsigned long NumOfBytes;
 	unsigned char *BytePtr;
 } SBYTE_ARRAY;
+
+// Return the packing to the previous value
+#pragma pack(pop)
 
 
 /************************/
