@@ -286,16 +286,16 @@ int Load_J2534DLL ( void )
 #ifdef F_HIJACK
     memset(pPtr, 0, sizeof(stPassThrough));
 
-    return 1;
+    //return 1;
 #endif
 
     int id;
 
     id = MessageBox ( NULL, "SCANDAQ/CARDAQ/MONGOOSE", "DLL", MB_YESNOCANCEL );
 
-    if ( _access ( "C:\\scandaq", 0 ) == 0 ) {
+    if ( _access ( "C:\\", 0 ) == 0 ) {
 
-        printf ( "found c:\\scandaq\n" );
+        printf ( "found c:\\MDI2\n" );
         id = IDYES;
 
     } else
@@ -322,7 +322,8 @@ int Load_J2534DLL ( void )
         case IDYES:
 
             printf ( "\nYou selected ScanDAQ\n" );
-            Load_J2534DLL ( "C:\\WINDOWS\\system32\\CDPLS232.DLL", &pPtr->data );
+            Load_J2534DLL ( "C:\\Program Files (x86)\\GM MDI Software\\Products\\MDI 2\\Dynamic Link Libraries\\BVTX4J321.dll", &pPtr->data );
+            //Load_J2534DLL ( "C:\\WINDOWS\\system32\\CDPLS232.DLL", &pPtr->data );
             break;
 
         case IDNO:
