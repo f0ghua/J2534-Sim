@@ -22,7 +22,7 @@
 //#define BUILD_TRANSLATE_0202                ( 1  )
 
 // simple simulation when no hardware
-#define SIMULATION_MODE 1
+//#define SIMULATION_MODE 1
 
 #define FAIL	( 0 )
 #define PASS	( 1 )
@@ -285,8 +285,10 @@ int Load_J2534DLL ( void )
 
 #ifdef F_HIJACK
     memset(pPtr, 0, sizeof(stPassThrough));
+#endif
 
-    //return 1;
+#ifdef SIMULATION_MODE
+    return 1;
 #endif
 
     int id;
@@ -322,17 +324,17 @@ int Load_J2534DLL ( void )
         case IDYES:
 
             printf ( "\nYou selected ScanDAQ\n" );
-            Load_J2534DLL ( "C:\\Program Files (x86)\\GM MDI Software\\Products\\MDI 2\\Dynamic Link Libraries\\BVTX4J321.dll", &pPtr->data );
+            Load_J2534DLL ( "C:\\Program Files (x86)\\GM MDI Software\\Products\\MDI 2\\Dynamic Link Libraries\\BVTX4J32.dll", &pPtr->data );
             //Load_J2534DLL ( "C:\\WINDOWS\\system32\\CDPLS232.DLL", &pPtr->data );
             break;
 
         case IDNO:
             printf ( "\nYou selected CARDAQ\n" );
-#ifdef BUILD_0404
-            Load_J2534DLL ( "C:\\Windows\\SYSTEM32\\CARDA432.DLL", &pPtr->data );
-#else
-            Load_J2534DLL ( "C:\\windows\\system32\\CARDAQ32.DLL", &pPtr->data );
-#endif
+//#ifdef BUILD_0404
+//            Load_J2534DLL ( "C:\\Windows\\SYSTEM32\\CARDA432.DLL", &pPtr->data );
+//#else
+//            Load_J2534DLL ( "C:\\windows\\system32\\CARDAQ32.DLL", &pPtr->data );
+//#endif
             break;
 
         case IDCANCEL:
@@ -344,6 +346,14 @@ int Load_J2534DLL ( void )
 
     return 1;
 
+}
+
+static inline stPassThrough *GetGlobalstPassThrough(unsigned long ChannelID)
+{
+    stPassThrough *pPtr = pGlobalPtr;
+//    stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
+    
+    return pPtr;
 }
 
 #define JTYPE extern  long  J2534_SIM_API
@@ -365,9 +375,24 @@ JTYPE  PassThruOpen ( void* pName, unsigned long * pDeviceID )
     if ( pPtr == NULL )
     { Load_J2534DLL(); }
 
+	{
+		char buffer[128];
+	
+		sprintf_s(buffer, sizeof(buffer), "dll has been loaded, %lx, %lx\n", pGlobalPtr, pGlobalPtr->data.pPassThruOpen);
+		LogMsg1 (buffer);
+	}
+	
 
-    if ( pPtr && pGlobalPtr->data.pPassThruOpen ) {
+    if ( pGlobalPtr && pGlobalPtr->data.pPassThruOpen ) {
+		pPtr = pGlobalPtr;
         ret = ( J2534ERROR ) pPtr->data.pPassThruOpen ( pName, pDeviceID );
+
+    	{
+			char buffer[128];
+
+			sprintf_s(buffer, sizeof(buffer), "DeviceID assigned = %ul, ret = %d\n", *pDeviceID, ret);
+			LogMsg1 (buffer);
+        }
 
         GetJ2534ErrorText ( ret );
     }
@@ -411,13 +436,13 @@ JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsign
     }
 
     char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruConnect 0404: DeviceID = %d, ProtocolID = %d, Flags =%d, BaudRate = %d\n", DeviceID, ProtocolID, Flags, Baudrate );
+    sprintf_s ( buffer, sizeof ( buffer ), "PassThruConnect 0404: DeviceID = %ul, ProtocolID = %d, Flags =%d, BaudRate = %d\n", DeviceID, ProtocolID, Flags, Baudrate );
     LogMsg1 ( buffer );
 
     LogMsg2 ( "protocol = %s\n", GetJ2534_PROTOCOLText ( ( J2534_PROTOCOL ) ProtocolID ) );
 
     if ( pPtr && pPtr->data.pPassThruConnect )	{
-        LogMsg1 ( "pPtr->data.pPassThruConnect != NULL" );
+        LogMsg1 ( "pPtr->data.pPassThruConnect != NULL\n" );
         ret = ( J2534ERROR ) pPtr->data.pPassThruConnect ( DeviceID, ProtocolID, Flags, Baudrate, &pPtr->ulChannel );
     }
 
@@ -426,10 +451,18 @@ JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsign
         pPtr->ulChannel = 0;
     }
 
+#if !defined ( SIMULATION_MODE )
+    if ( pChannelID ) {
+        *pChannelID = ( unsigned long ) pPtr->ulChannel;
+    }
+#else
     if ( pChannelID ) {
         *pChannelID = ( unsigned long ) pGlobalPtr;
-        LogMsg1 ("ChannelID assigned\n");
     }
+#endif
+
+    sprintf_s(buffer, sizeof(buffer), "ChannelID assigned = %d\n", *pChannelID);
+    LogMsg1 (buffer);
 
     return ret;
 }
@@ -437,11 +470,11 @@ JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsign
 JTYPE PassThruDisconnect ( unsigned long ChannelID )
 {
 #ifdef F_HIJACK
-    LogMsg1("PassThruDisconnect\n");
+    //LogMsg1("PassThruDisconnect\n");
 #endif
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
-    stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
+    stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
 
     if ( pPtr )
     { ChannelID = pPtr->ulChannel; }
@@ -464,12 +497,12 @@ JTYPE PassThruDisconnect ( unsigned long ChannelID )
 JTYPE PassThruReadMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned long * pNumMsgs, unsigned long Timeout )
 {
 #ifdef F_HIJACK
-    LogMsg1("PassThruDisconnect\n");
+    //LogMsg1("PassThruReadMsgs\n");
 #endif
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
-    stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
+    stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
 
     if ( pPtr ) {
         ChannelID = pPtr->ulChannel;
@@ -537,7 +570,7 @@ JTYPE PassThruWriteMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned
     LogMsg1("PassThruWriteMsgs\n");
 #endif
 
-    stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
+    stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
 
     if ( pPtr ) {
         ChannelID = pPtr->ulChannel;
@@ -606,7 +639,7 @@ JTYPE PassThruStartPeriodicMsg ( unsigned long ChannelID, PASSTHRU_MSG * pMsg,
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
-    stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
+    stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
 
     if ( pPtr ) {
         ChannelID = pPtr->ulChannel;
@@ -637,7 +670,7 @@ JTYPE PassThruStopPeriodicMsg ( unsigned long ChannelID, unsigned long MsgID )
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
-    stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
+    stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
     ChannelID = pPtr->ulChannel;
 
     char buffer[1024];
@@ -666,7 +699,7 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
 #endif
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
-    stPassThrough *pPtr = ( stPassThrough* ) ChannelID;
+    stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID );
 
     if ( pPtr ) {
         ChannelID = pPtr->ulChannel;
@@ -808,7 +841,7 @@ JTYPE PassThruStopMsgFilter ( unsigned long ChannelID, unsigned long ulFilterID 
 
 #if !defined ( SIMULATION_MODE )
 
-    stPassThrough *pPtr = ( stPassThrough* ) ChannelID;
+    stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID );
 
     if ( pPtr ) {
         ChannelID = pPtr->ulChannel;
@@ -868,7 +901,7 @@ JTYPE PassThruReadVersion ( unsigned long DeviceID, char *pchFirmwareVersion, ch
     stPassThrough *pPtr = pGlobalPtr ;
 
     char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruReadVersion : DeviceID = %d\n", DeviceID );
+    sprintf_s ( buffer, sizeof ( buffer ), "PassThruReadVersion : DeviceID = %ul\n", DeviceID );
     LogMsg1 ( buffer );
 
 #if !defined ( SIMULATION_MODE )
@@ -879,6 +912,7 @@ JTYPE PassThruReadVersion ( unsigned long DeviceID, char *pchFirmwareVersion, ch
         LogMsg1 ( pchFirmwareVersion );
         LogMsg1 ( pchDllVersion );
         LogMsg1 ( pchApiVersion );
+		LogMsg1 ("\n");
 
     }
 
@@ -975,17 +1009,10 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
                       void *pInput, void *pOutput )
 {
 #ifdef F_HIJACK
-    LogMsg1("PassThruIoctl\n");
+    //LogMsg1("PassThruIoctl\n");
 #endif
 
     int ret;
-
-    stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
-
-    if ( pPtr ) {
-        ChannelID = pPtr->ulChannel;
-    }
-
 
     {
         char buffer[1024];
@@ -993,13 +1020,29 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
         sprintf_s ( buffer, sizeof ( buffer ), "PassThruIoctl(%d,%s,0x%lx,0x%lx)\n", ChannelID, GetJ2534IOCTLIDText ( IoctlID ), pInput, pOutput );
         LogMsg1 ( buffer );
     }
+	
+
+    stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
+
+    //if ( pPtr ) {
+    //    ChannelID = pPtr->ulChannel;
+    //}
+
+
+    {
+        char buffer[1024];
+
+        sprintf_s ( buffer, sizeof ( buffer ), "*PassThruIoctl(%d,%s,0x%lx,0x%lx)\n", ChannelID, GetJ2534IOCTLIDText ( IoctlID ), pInput, pOutput );
+        LogMsg1 ( buffer );
+    }
 
 #if !defined ( SIMULATION_MODE )
 
     if ( pPtr && pPtr->data.pPassThruIoctl ) {
-        ret = ( J2534ERROR ) pPtr->data.pPassThruIoctl ( ChannelID, IoctlID, pInput, pOutput );
-
         char buffer[1024];
+        
+        ret = ( J2534ERROR ) pPtr->data.pPassThruIoctl ( ChannelID, IoctlID, pInput, pOutput );
+        
         sprintf_s ( buffer, sizeof ( buffer ), "%d = pPassThruIoctl()\n", ret );
         LogMsg1 ( buffer );
 
@@ -1014,7 +1057,7 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
 }
 
 
-#else
+#else // BUILD_0404
 
 
 
@@ -1990,7 +2033,7 @@ extern "C"  J2534ERROR J2534_SIM_API PassThruIoctl (
     return ret;
 }
 
-#endif
+#endif // BUILD_0404
 
 static char *GetJ2534IOCTLIDText ( J2534IOCTLID enumIoctlID )
 {
