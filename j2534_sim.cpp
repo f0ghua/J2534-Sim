@@ -1043,9 +1043,12 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
         if (pInput) {
             auto sconfigs = reinterpret_cast<SCONFIG_LIST *>(pInput);
             for (unsigned long i = 0; i < sconfigs->NumOfParams; i++) {
-                char buffer[128];
-                sprintf_s ( buffer, sizeof ( buffer ), "output pInput[%lu] P = %lu, v = %lu\n", i, sconfigs->ConfigPtr[i].Parameter, sconfigs->ConfigPtr[i].Value);
-                LogMsg1 ( buffer );
+				auto configPtr = sconfigs->ConfigPtr + i;
+				if (configPtr) {
+                	char buffer[128];
+                	sprintf_s ( buffer, sizeof ( buffer ), "output pInput[%lu] P = %lu, v = %lu\n", i, configPtr->Parameter, configPtr->Value);
+                	LogMsg1 ( buffer );
+				}
             }
         }
         if (pOutput) {
