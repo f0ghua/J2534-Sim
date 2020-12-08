@@ -1014,14 +1014,6 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
 
     int ret;
 
-    {
-        char buffer[1024];
-
-        sprintf_s ( buffer, sizeof ( buffer ), "PassThruIoctl(%d,%s,0x%lx,0x%lx)\n", ChannelID, GetJ2534IOCTLIDText ( IoctlID ), pInput, pOutput );
-        LogMsg1 ( buffer );
-    }
-	
-
     stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
 
     //if ( pPtr ) {
@@ -1032,7 +1024,7 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
     {
         char buffer[1024];
 
-        sprintf_s ( buffer, sizeof ( buffer ), "*PassThruIoctl(%d,%s,0x%lx,0x%lx)\n", ChannelID, GetJ2534IOCTLIDText ( IoctlID ), pInput, pOutput );
+        sprintf_s ( buffer, sizeof ( buffer ), "PassThruIoctl(%d,%s,0x%lx,0x%lx)\n", ChannelID, GetJ2534IOCTLIDText ( IoctlID ), pInput, pOutput );
         LogMsg1 ( buffer );
     }
 
@@ -1047,6 +1039,20 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
         LogMsg1 ( buffer );
 
         GetJ2534ErrorText ( ret );
+
+        if (pInput) {
+            auto sconfigs = reinterpret_cast<SCONFIG_LIST *>(pInput);
+            for (unsigned long i = 0; i < sconfigs->NumOfParams; i++) {
+                char buffer[128];
+                sprintf_s ( buffer, sizeof ( buffer ), "output pInput[%lu] P = %lu, v = %lu\n", i, sconfigs->ConfigPtr[i].Parameter, sconfigs->ConfigPtr[i].Value);
+                LogMsg1 ( buffer );
+            }
+        }
+        if (pOutput) {
+                char buffer[128];
+                sprintf_s ( buffer, sizeof ( buffer ), "output *pOutput = %lu\n", *reinterpret_cast<unsigned long *>(pOutput));
+                LogMsg1 ( buffer );
+        }
     }
 #else
     SetIoCtlOutputValue(IoctlID, NULL, pOutput);
@@ -2288,7 +2294,7 @@ static void LogMsg1 ( char *str )
 //	Sleep(10);
 
     FILE *fp = NULL;
-    int errno = fopen_s ( &fp, LOG_FILE_FILENAME, "a" );
+    int err = fopen_s ( &fp, LOG_FILE_FILENAME, "a" );
 
     _RPT0 ( _CRT_WARN, str );
 //    printf ( "%s\n", str );
@@ -2307,7 +2313,7 @@ static void LogMsg2 ( char *str, char*str1 )
     //	Sleep( 50 );
 
     Sleep ( 10 );
-    int errno = fopen_s ( &fp, LOG_FILE_FILENAME, "a" );
+    int err = fopen_s ( &fp, LOG_FILE_FILENAME, "a" );
     _RPT1 ( _CRT_WARN, str, str1 );
 
 
