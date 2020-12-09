@@ -11,6 +11,10 @@
 #endif // _MSC_VER > 1000
 
 
+#if _MSC_VER >= 1600
+#pragma execution_character_set("utf-8")
+#endif
+
 // Insert your headers here
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 
@@ -20,7 +24,7 @@
 #include <stdlib.h>
 
 // TODO: reference additional headers your program requires here
-#include <crtdbg.h>
+//#include <crtdbg.h>
 
 #include <time.h>
 #include <io.h>
