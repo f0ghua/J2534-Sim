@@ -509,7 +509,7 @@ JTYPE PassThruReadMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned 
     }
 
     char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruReadMsgs : ChannelID = %d\n", ChannelID );
+    sprintf_s ( buffer, sizeof ( buffer ), "PassThruReadMsgs : ChannelID = %lu, N = %lu, T=%lu\n", ChannelID, *pNumMsgs, Timeout );
     LogMsg1 ( buffer );
 
     pPtr = pGlobalPtr;
@@ -518,6 +518,8 @@ JTYPE PassThruReadMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned 
 
         //	Sleep(20);
         ret = ( J2534ERROR ) pPtr->data.pPassThruReadMsgs ( ChannelID, pMsg, pNumMsgs, Timeout );
+		sprintf_s ( buffer, sizeof ( buffer ), "PassThruReadMsgs : ret = %d, N = %lu\n", ret, *pNumMsgs );
+    	LogMsg1 ( buffer );
     }
 
     if ( ret == J2534_STATUS_NOERROR && pMsg->ulDataSize ) {
@@ -625,6 +627,10 @@ JTYPE PassThruWriteMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned
 //		Sleep( 10 );
 
         ret = ( J2534ERROR ) pPtr->data.pPassThruWriteMsgs ( ChannelID, pMsg, pNumMsgs, Timeout );
+
+		sprintf_s ( buffer, sizeof ( buffer ), "PassThruWriteMsgs : ret = %d, N = %lu\n", ret, *pNumMsgs );
+		LogMsg1 ( buffer );
+
     }
 
     return ret;
@@ -1024,7 +1030,7 @@ JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
     {
         char buffer[1024];
 
-        sprintf_s ( buffer, sizeof ( buffer ), "PassThruIoctl(%d,%s,0x%lx,0x%lx)\n", ChannelID, GetJ2534IOCTLIDText ( IoctlID ), pInput, pOutput );
+        sprintf_s ( buffer, sizeof ( buffer ), "PassThruIoctl(%ul,%s,0x%lx,0x%lx)\n", ChannelID, GetJ2534IOCTLIDText ( IoctlID ), pInput, pOutput );
         LogMsg1 ( buffer );
     }
 
