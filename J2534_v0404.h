@@ -91,7 +91,7 @@
 #define READ_VBATT						0x03
 #define FIVE_BAUD_INIT						0x04
 #define FAST_INIT						0x05
-// unused							0x06
+#define SET_PIN_USE                         0x06
 #define CLEAR_TX_BUFFER						0x07
 #define CLEAR_RX_BUFFER						0x08
 #define CLEAR_PERIODIC_MSGS					0x09

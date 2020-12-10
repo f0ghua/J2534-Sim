@@ -47,7 +47,7 @@
 
 //helllo have we heard of varags.
 
-std::shared_ptr<spdlog::logger> kDefaultLogger;
+//std::shared_ptr<spdlog::logger> kDefaultLogger;
 
 static const std::string localFile(const std::string& fullPath)
 {
@@ -85,267 +85,290 @@ static void setupLogger()
 {
     auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(getLogFilePath(), LOG_FILE_SIZE, LOG_FILE_NUMBER);
     file_sink->set_pattern("[%Y-%m-%d %H:%M:%S:%e] [%n] [%t] [%l] %v");
-    //file_sink->set_level(spdlog::level::trace);
 
-    //auto sinkK   = std::make_shared<spdlog::sinks::msvc_sink_mt>();
-    kDefaultLogger = std::make_shared<spdlog::logger>("cds", file_sink);
+    std::vector<spdlog::sink_ptr> sinks;
+    sinks.push_back(file_sink);
 
-    kDefaultLogger->set_level(spdlog::level::trace);
-
+    auto kDefaultLogger = std::make_shared<spdlog::logger>("multi_sink", begin( sinks ), end( sinks ));
+    spdlog::register_logger(kDefaultLogger);
+    spdlog::set_default_logger(kDefaultLogger);
+    spdlog::set_level(spdlog::level::trace);
 }
 
-static void LogMsg1 ( const char *str )
+//static void LogMsg1 ( const char *str )
+//{
+//    kDefaultLogger->debug("{}", str);
+//}
+
+//static void LogMsg2 ( const char *str, const char *str1 )
+//{
+//    kDefaultLogger->debug("{} {}", str, str1);
+//}
+
+static char const *getJ2534ProtocolText(unsigned long protocol)
 {
-    kDefaultLogger->debug("{}", str);
-}
+    static char buffer[128] = {0};
 
-static void LogMsg2 ( const char *str, const char *str1 )
-{
-    kDefaultLogger->debug("{} {}", str, str1);
-}
-
-static const char *GetJ2534IOCTLIDText ( J2534IOCTLID enumIoctlID )
-{
-    char buffer[16] = {0};
-
-    switch ( enumIoctlID ) {
-
-        case GET_CONFIG:
-            return "GET_CONFIG";
-
-        case SET_CONFIG:
-            return "SET_CONFIG";
-
-        case READ_VBATT:
-            return "READ_VBATT";
-
-        case FIVE_BAUD_INIT:
-            return "FIVE_BAUD_INIT";
-
-        case FAST_INIT:
-            return "FAST_INIT";
-
-#ifdef SET_PIN_USE
-
-        case SET_PIN_USE:
-            return "SET_PIN_USE";
-#endif
-
-        case CLEAR_TX_BUFFER:
-            return "CLEAR_TX_BUFFER";
-
-        case CLEAR_RX_BUFFER:
-            return "CLEAR_RX_BUFFER";
-
-        case CLEAR_PERIODIC_MSGS:
-            return "CLEAR_PERIODIC_MSGS";
-
-        case CLEAR_MSG_FILTERS:
-            return "CLEAR_MSG_FILTERS";
-
-        case CLEAR_FUNCT_MSG_LOOKUP_TABLE:
-            return "CLEAR_FUNCT_MSG_LOOKUP_TABLE";
-
-        case ADD_TO_FUNCT_MSG_LOOKUP_TABLE:
-            return "ADD_TO_FUNCT_MSG_LOOKUP_TABLE";
-
-        case DELETE_FROM_FUNCT_MSG_LOOKUP_TABLE:
-            return "DELETE_FROM_FUNCT_MSG_LOOKUP_TABLE";
-
-        case READ_PROG_VOLTAGE:
-            return "READ_PROG_VOLTAGE";
-
-        default:
-#ifdef F_HIJACK
-            sprintf_s ( buffer, sizeof ( buffer ), "unknow(%ld)", enumIoctlID);
-            return buffer;
-#else
-            return "unknow";
-#endif
-
-    }
-}
-
-static const char *GetJ2534_PROTOCOLText ( J2534_PROTOCOL protocol )
-{
-    char buffer[16] = {0};
-
+    memset(buffer, 0, sizeof(buffer));
     switch ( protocol ) {
-
         case J1850VPW:								// J1850VPW Protocol
-            return "J1850VPW";
+            sprintf_s(buffer, sizeof(buffer), "J1850VPW(%lu)", protocol);
+            break;
 
         case J1850PWM:								// J1850PWM Protocol
-            return "J1850PWM";
+            sprintf_s(buffer, sizeof(buffer), "J1850PWM(%lu)", protocol);
+            break;
 
         case ISO9141:								// ISO9141 Protocol
-            return "ISO9141";
+            sprintf_s(buffer, sizeof(buffer), "ISO9141(%lu)", protocol);
+            break;
 
         case ISO14230:								// ISO14230 Protocol
-            return "ISO14230";
+            sprintf_s(buffer, sizeof(buffer), "ISO14230(%lu)", protocol);
+            break;
 
         case CAN:									// CAN Protocol
-            return "CAN";
+            sprintf_s(buffer, sizeof(buffer), "CAN(%lu)", protocol);
+            break;
 
         case ISO15765:
-            return "ISO15765";
+            sprintf_s(buffer, sizeof(buffer), "ISO15765(%lu)", protocol);
+            break;
 
         case SCI_A_ENGINE:
-            return "SCI_A_ENGINE";
+            sprintf_s(buffer, sizeof(buffer), "SCI_A_ENGINE(%lu)", protocol);
+            break;
 
         case SCI_A_TRANS:
-            return "SCI_A_TRANS";
+            sprintf_s(buffer, sizeof(buffer), "SCI_A_TRANS(%lu)", protocol);
+            break;
 
         case SCI_B_ENGINE:
-            return "SCI_B_ENGINE";
+            sprintf_s(buffer, sizeof(buffer), "SCI_B_ENGINE(%lu)", protocol);
+            break;
 
         case SCI_B_TRANS:
-            return "SCI_B_TRANS";
+            sprintf_s(buffer, sizeof(buffer), "SCI_B_TRANS(%lu)", protocol);
+            break;
 
-#ifdef ISO9141_FORD
+        case J1850VPW_PS:
+            sprintf_s(buffer, sizeof(buffer), "J1850VPW_PS(%lu)", protocol);
+            break;
 
-        case ISO9141_FORD:							// ISO9141 FORD Protocol
-            return "ISO9141_FORD";
+        case J1850PWM_PS:
+            sprintf_s(buffer, sizeof(buffer), "J1850PWM_PS(%lu)", protocol);
+            break;
 
-        case UBP:									// UBP Protocol
-            return "UBP";
+        case ISO9141_PS:
+            sprintf_s(buffer, sizeof(buffer), "ISO9141_PS(%lu)", protocol);
+            break;
 
-        case DDL:									// DDL Protocol
-            return "DDL";
+        case ISO14230_PS:
+            sprintf_s(buffer, sizeof(buffer), "ISO14230_PS(%lu)", protocol);
+            break;
 
-        //**** NOTE ****
-        //		 ALWAYS ADD NEW PROTOCOL
-        //		 BEFORE J2534_PROTOCOL_NUM
-        //		 SO THAT THIS VALUE AUTOMATICALLY
-        //		 GETS UPDATED WHEN A NEW PROTOCOL
-        //		 IS ADDED.
-        case J2534_PROTOCOL_NUM:
-#endif
-#ifdef F_HIJACK
+        case CAN_PS:
+            sprintf_s(buffer, sizeof(buffer), "CAN_PS(%lu)", protocol);
+            break;
+
+        case ISO15765_PS:
+            sprintf_s(buffer, sizeof(buffer), "ISO15765_PS(%lu)", protocol);
+            break;
+
+        case J2610_PS:
+            sprintf_s(buffer, sizeof(buffer), "J2610_PS(%lu)", protocol);
+            break;
+
+        case SW_ISO15765_PS:
+            sprintf_s(buffer, sizeof(buffer), "SW_ISO15765_PS(%lu)", protocol);
+            break;
+
+        case SW_CAN_PS:
+            sprintf_s(buffer, sizeof(buffer), "SW_CAN_PS(%lu)", protocol);
+            break;
+
+        case GM_UART_PS:
+            sprintf_s(buffer, sizeof(buffer), "GM_UART_PS(%lu)", protocol);
+            break;
+
         case ISO15765_FD_PS:
-            return "ISO15765_FD_PS";
+            sprintf_s(buffer, sizeof(buffer), "ISO15765_FD_PS(%lu)", protocol);
+            break;
+
         case CAN_FD_PS:
-            return "CAN_FD_PS";
-#endif
+            sprintf_s(buffer, sizeof(buffer), "CAN_FD_PS(%lu)", protocol);
+            break;
 
         default:
-#ifdef F_HIJACK
-                sprintf_s ( buffer, sizeof ( buffer ), "unknown(%ld)", protocol);
-                return buffer;
-#else
-                return "unknown";
-#endif
-
+            sprintf_s ( buffer, sizeof ( buffer ), "unknown(%lu)", protocol);
+            break;
     }
+
+    return buffer;
 }
 
-static const char* GetJ2534IOCTLPARAMIDText ( J2534IOCTLPARAMID value )
+static char const *getJ2534IoctlIdText (unsigned long ioctlId)
 {
-    char buffer[16] = {0};
+    static char buffer[128] = {0};
 
-    switch ( value  ) {
-        case DATA_RATE:
-            return "DATA_RATE";
+    memset(buffer, 0, sizeof(buffer));
+    switch (ioctlId) {
 
-        case LOOPBACK:
-            return "LOOPBACK";
-
-        case NODE_ADDRESS:
-            return "NODE_ADDRESS";
-
-        case NETWORK_LINE:
-            return "NETWORK_LINE";
-
-        case P1_MIN:
-            return "P1_MIN";
-
-        case P1_MAX:
-            return "P1_MAX";
-
-        case P2_MIN:
-            return "P2_MIN";
-
-        case P2_MAX:
-            return "P2_MAX";
-
-        case P3_MIN:
-            return "P3_MIN";
-
-        case P3_MAX:
-            return "P3_MAX";
-
-        case P4_MIN:
-            return "P4_MIN";
-
-        case P4_MAX:
-            return "P4_MAX";
-
-        case W1:
-            return "W1";
-
-        case W2:
-            return "W2";
-
-        case W3:
-            return "W3";
-
-        case W4:
-            return "W4";
-
-        case W5:
-            return "W5";
-
-        case TIDLE:
-            return "TIDLE";
-
-        case TINIL:
-            return "TINIL";
-
-        case TWUP:
-            return "TWUP";
-
-        case PARITY:
-            return "PARITY";
-
-        case BIT_SAMPLE_POINT:
-            return "BIT_SAMPLE_POINT";
-
-        case SYNC_JUMP_WIDTH:
-            return "SYNC_JUMP_WIDTH";
-
-        case W0:
-            return "W0";
-
-        case T1_MAX:
-            return "T1_MAX";
-
-        case T2_MAX:
-            return "T2_MAX";
-
-        case T4_MAX:
-            return "T4_MAX";
-
-        case T5_MAX:
-            return "T5_MAX";
-
-        case ISO15765_BS:
-            return "ISO15765_BS";
-
-        case ISO15765_STMIN:
-            return "ISO15765_STMIN";
-
-        case DATA_BITS:
-            return "DATA_BITS";
-
+        case GET_CONFIG:
+            sprintf_s(buffer, sizeof(buffer), "GET_CONFIG(%lu)", ioctlId);
+            break;
+        case SET_CONFIG:
+            sprintf_s(buffer, sizeof(buffer), "SET_CONFIG(%lu)", ioctlId);
+            break;
+        case READ_VBATT:
+            sprintf_s(buffer, sizeof(buffer), "READ_VBATT(%lu)", ioctlId);
+            break;
+        case FIVE_BAUD_INIT:
+            sprintf_s(buffer, sizeof(buffer), "FIVE_BAUD_INIT(%lu)", ioctlId);
+            break;
+        case FAST_INIT:
+            sprintf_s(buffer, sizeof(buffer), "FAST_INIT(%lu)", ioctlId);
+            break;
+        case SET_PIN_USE:
+            sprintf_s(buffer, sizeof(buffer), "SET_PIN_USE(%lu)", ioctlId);
+            break;
+        case CLEAR_TX_BUFFER:
+            sprintf_s(buffer, sizeof(buffer), "CLEAR_TX_BUFFER(%lu)", ioctlId);
+            break;
+        case CLEAR_RX_BUFFER:
+            sprintf_s(buffer, sizeof(buffer), "CLEAR_RX_BUFFER(%lu)", ioctlId);
+            break;
+        case CLEAR_PERIODIC_MSGS:
+            sprintf_s(buffer, sizeof(buffer), "CLEAR_PERIODIC_MSGS(%lu)", ioctlId);
+            break;
+        case CLEAR_MSG_FILTERS:
+            sprintf_s(buffer, sizeof(buffer), "CLEAR_MSG_FILTERS(%lu)", ioctlId);
+            break;
+        case CLEAR_FUNCT_MSG_LOOKUP_TABLE:
+            sprintf_s(buffer, sizeof(buffer), "CLEAR_FUNCT_MSG_LOOKUP_TABLE(%lu)", ioctlId);
+            break;
+        case ADD_TO_FUNCT_MSG_LOOKUP_TABLE:
+            sprintf_s(buffer, sizeof(buffer), "ADD_TO_FUNCT_MSG_LOOKUP_TABLE(%lu)", ioctlId);
+            break;
+        case DELETE_FROM_FUNCT_MSG_LOOKUP_TABLE:
+            sprintf_s(buffer, sizeof(buffer), "DELETE_FROM_FUNCT_MSG_LOOKUP_TABLE(%lu)", ioctlId);
+            break;
+        case READ_PROG_VOLTAGE:
+            sprintf_s(buffer, sizeof(buffer), "READ_PROG_VOLTAGE(%lu)", ioctlId);
+            break;
         default:
-#ifdef F_HIJACK
-            sprintf_s ( buffer, sizeof ( buffer ), "unknown(%ld)", value);
-            return buffer;
-#else
-            return "GetJ2534IOCTLPARAMIDText unknown";
-#endif
-
+            sprintf_s(buffer, sizeof(buffer), "unknow(%lu)", ioctlId);
+            break;
     }
+
+    return buffer;
+}
+
+static char const *getJ2534IoctlParamIdText(unsigned long param)
+{
+    static char buffer[128] = {0};
+
+    memset(buffer, 0, sizeof(buffer));
+
+    switch (param) {
+        case DATA_RATE:
+            sprintf_s(buffer, sizeof(buffer), "DATA_RATE(%lu)", param);
+            break;
+        case LOOPBACK:
+            sprintf_s(buffer, sizeof(buffer), "LOOPBACK(%lu)", param);
+            break;
+        case NODE_ADDRESS:
+            sprintf_s(buffer, sizeof(buffer), "NODE_ADDRESS(%lu)", param);
+            break;
+        case NETWORK_LINE:
+            sprintf_s(buffer, sizeof(buffer), "NETWORK_LINE(%lu)", param);
+            break;
+        case P1_MIN:
+            sprintf_s(buffer, sizeof(buffer), "P1_MIN(%lu)", param);
+            break;
+        case P1_MAX:
+            sprintf_s(buffer, sizeof(buffer), "P1_MAX(%lu)", param);
+            break;
+        case P2_MIN:
+            sprintf_s(buffer, sizeof(buffer), "P2_MIN(%lu)", param);
+            break;
+        case P2_MAX:
+            sprintf_s(buffer, sizeof(buffer), "P2_MAX(%lu)", param);
+            break;
+        case P3_MIN:
+            sprintf_s(buffer, sizeof(buffer), "P3_MIN(%lu)", param);
+            break;
+        case P3_MAX:
+            sprintf_s(buffer, sizeof(buffer), "P3_MAX(%lu)", param);
+            break;
+        case P4_MIN:
+            sprintf_s(buffer, sizeof(buffer), "P4_MIN(%lu)", param);
+            break;
+        case P4_MAX:
+            sprintf_s(buffer, sizeof(buffer), "P4_MAX(%lu)", param);
+            break;
+        case W1:
+            sprintf_s(buffer, sizeof(buffer), "W1(%lu)", param);
+            break;
+        case W2:
+            sprintf_s(buffer, sizeof(buffer), "W2(%lu)", param);
+            break;
+        case W3:
+            sprintf_s(buffer, sizeof(buffer), "W3(%lu)", param);
+            break;
+        case W4:
+            sprintf_s(buffer, sizeof(buffer), "W4(%lu)", param);
+            break;
+        case W5:
+            sprintf_s(buffer, sizeof(buffer), "W5(%lu)", param);
+            break;
+        case TIDLE:
+            sprintf_s(buffer, sizeof(buffer), "TIDLE(%lu)", param);
+            break;
+        case TINIL:
+            sprintf_s(buffer, sizeof(buffer), "TINIL(%lu)", param);
+            break;
+        case TWUP:
+            sprintf_s(buffer, sizeof(buffer), "TWUP(%lu)", param);
+            break;
+        case PARITY:
+            sprintf_s(buffer, sizeof(buffer), "PARITY(%lu)", param);
+            break;
+        case BIT_SAMPLE_POINT:
+            sprintf_s(buffer, sizeof(buffer), "BIT_SAMPLE_POINT(%lu)", param);
+            break;
+        case SYNC_JUMP_WIDTH:
+            sprintf_s(buffer, sizeof(buffer), "SYNC_JUMP_WIDTH(%lu)", param);
+            break;
+//        case W0:
+//            return "W0";
+        case T1_MAX:
+            sprintf_s(buffer, sizeof(buffer), "T1_MAX(%lu)", param);
+            break;
+        case T2_MAX:
+            sprintf_s(buffer, sizeof(buffer), "T2_MAX(%lu)", param);
+            break;
+        case T4_MAX:
+            sprintf_s(buffer, sizeof(buffer), "T4_MAX(%lu)", param);
+            break;
+        case T5_MAX:
+            sprintf_s(buffer, sizeof(buffer), "T5_MAX(%lu)", param);
+            break;
+        case ISO15765_BS:
+            sprintf_s(buffer, sizeof(buffer), "ISO15765_BS(%lu)", param);
+            break;
+        case ISO15765_STMIN:
+            sprintf_s(buffer, sizeof(buffer), "ISO15765_STMIN(%lu)", param);
+            break;
+        case DATA_BITS:
+            sprintf_s(buffer, sizeof(buffer), "DATA_BITS(%lu)", param);
+            break;
+        default:
+            sprintf_s(buffer, sizeof(buffer), "unknow(%lu)", param);
+            break;
+    }
+
+    return buffer;
 }
 
 /*
@@ -353,119 +376,203 @@ static const char* GetJ2534IOCTLPARAMIDText ( J2534IOCTLPARAMID value )
  *	Input: J2534ERROR err
  */
 
-static void GetJ2534ErrorText ( J2534ERROR err )
+static char const * getJ2534ErrorText ( J2534ERROR err )
 {
+    static char buffer[128] = {0};
+    memset(buffer, 0, sizeof(buffer));
 
     switch ( err ) {
         case STATUS_NOERROR						:         //    0x00
-            LogMsg1 ( "STATUS_NOERROR\n" );
+            sprintf_s(buffer, sizeof(buffer), "STATUS_NOERROR(%lu)", err);
             break;
 
         case ERR_NOT_SUPPORTED					:         //    0x01
-            LogMsg1 ( "ERR_NOT_SUPPORTED\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_NOT_SUPPORTED(%lu)", err);
             break;
 
         case ERR_INVALID_CHANNEL_ID					:         //    0x02
-            LogMsg1 ( "ERR_INVALID_CHANNEL_ID\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_CHANNEL_ID(%lu)", err);
             break;
 
         case ERR_INVALID_PROTOCOL_ID					:         //    0x03
-            LogMsg1 ( "ERR_INVALID_PROTOCOL_ID\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_PROTOCOL_ID(%lu)", err);
             break;
 
         case ERR_NULL_PARAMETER					:         //    0x04
-            LogMsg1 ( "ERR_NULL_PARAMETER\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_NULL_PARAMETER(%lu)", err);
             break;
 
         case ERR_INVALID_IOCTL_VALUE					:         //    0x05
-            LogMsg1 ( "ERR_INVALID_IOCTL_VALUE\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_IOCTL_VALUE(%lu)", err);
             break;
 
         case ERR_INVALID_FLAGS					:         //    0x06
-            LogMsg1 ( "ERR_INVALID_FLAGS\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_FLAGS(%lu)", err);
             break;
 
         case ERR_FAILED						:         //    0x07
-            LogMsg1 ( "ERR_FAILED\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_FAILED(%lu)", err);
             break;
 
         case ERR_DEVICE_NOT_CONNECTED				:         //    0x08
-            LogMsg1 ( "ERR_DEVICE_NOT_CONNECTED\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_DEVICE_NOT_CONNECTED(%lu)", err);
             break;
 
         case ERR_TIMEOUT						:         //    0x09
-            LogMsg1 ( "ERR_TIMEOUT\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_TIMEOUT(%lu)", err);
             break;
 
         case ERR_INVALID_MSG						:         //    0x0A
-            LogMsg1 ( "ERR_INVALID_MSG\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_MSG(%lu)", err);
             break;
 
         case ERR_INVALID_TIME_INTERVAL				:         //    0x0B
-            LogMsg1 ( "ERR_INVALID_TIME_INTERVAL\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_TIME_INTERVAL(%lu)", err);
             break;
 
         case ERR_EXCEEDED_LIMIT					:         //    0x0C
-            LogMsg1 ( "ERR_EXCEEDED_LIMIT\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_EXCEEDED_LIMIT(%lu)", err);
             break;
 
         case ERR_INVALID_MSG_ID					:         //    0x0D
-            LogMsg1 ( "ERR_INVALID_MSG_ID\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_MSG_ID(%lu)", err);
             break;
 
         case ERR_DEVICE_IN_USE					:         //    0x0E
-            LogMsg1 ( "ERR_DEVICE_IN_USE\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_DEVICE_IN_USE(%lu)", err);
             break;
 
         case ERR_INVALID_IOCTL_ID					:         //    0x0F
-            LogMsg1 ( "ERR_INVALID_IOCTL_ID\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_IOCTL_ID(%lu)", err);
             break;
 
         case ERR_BUFFER_EMPTY					:         //    0x10
-            LogMsg1 ( "ERR_BUFFER_EMPTY\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_BUFFER_EMPTY(%lu)", err);
             break;
 
         case ERR_BUFFER_FULL						:         //    0x11
-            LogMsg1 ( "ERR_BUFFER_FULL\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_BUFFER_FULL(%lu)", err);
             break;
 
         case ERR_BUFFER_OVERFLOW					:         //    0x12
-            LogMsg1 ( "ERR_BUFFER_OVERFLOW\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_BUFFER_OVERFLOW(%lu)", err);
             break;
 
         case ERR_PIN_INVALID						:         //    0x13
-            LogMsg1 ( "ERR_PIN_INVALID\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_PIN_INVALID(%lu)", err);
             break;
 
         case ERR_CHANNEL_IN_USE					:         //    0x14
-            LogMsg1 ( "ERR_CHANNEL_IN_USE\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_CHANNEL_IN_USE(%lu)", err);
             break;
 
         case ERR_MSG_PROTOCOL_ID					:         //    0x15
-            LogMsg1 ( "ERR_MSG_PROTOCOL_ID\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_MSG_PROTOCOL_ID(%lu)", err);
             break;
 
         case ERR_INVALID_FILTER_ID					:         //    0x16
-            LogMsg1 ( "ERR_INVALID_FILTER_ID\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_FILTER_ID(%lu)", err);
             break;
 
         case ERR_NO_FLOW_CONTROL					:         //    0x17
-            LogMsg1 ( "ERR_NO_FLOW_CONTROL - No ISO15765 flow control filter is set, or no filter matches the header of an outgoing message\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_NO_FLOW_CONTROL(%lu)", err);
             break;
 
         case ERR_NOT_UNIQUE						:         //    0x18
-            LogMsg1 ( "ERR_NOT_UNIQUE\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_NOT_UNIQUE(%lu)", err);
             break;
 
         case ERR_INVALID_BAUDRATE					:         //    0x19
-            LogMsg1 ( "ERR_INVALID_BAUDRATE\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_BAUDRATE(%lu)", err);
             break;
 
         case ERR_INVALID_DEVICE_ID					:         //    0x1A
-            LogMsg1 ( "ERR_INVALID_DEVICE_ID\n" );
+            sprintf_s(buffer, sizeof(buffer), "ERR_INVALID_DEVICE_ID(%lu)", err);
+            break;
+        default:
+            sprintf_s(buffer, sizeof(buffer), "unknow(%lu)", err);
             break;
     }
+
+    return buffer;
 }
+
+static void printPASSTHRU_MSG(PASSTHRU_MSG *pMsg, char const *indent = "\t\t");
+static void printPASSTHRU_MSG(PASSTHRU_MSG *pMsg, char const *indent)
+{
+    if (pMsg != nullptr) {
+        SPDLOG_TRACE("{}pMsg->ProtocolID = {}", indent, getJ2534ProtocolText(pMsg->ProtocolID));
+        SPDLOG_TRACE("{}pMsg->RxStatus = 0x{:x}", indent, pMsg->RxStatus);
+        SPDLOG_TRACE("{}pMsg->TxFlags = 0x{:x}", indent, pMsg->TxFlags);
+        SPDLOG_TRACE("{}pMsg->DataSize = {}", indent, pMsg->DataSize);
+        SPDLOG_TRACE("{}pMsg->Data = [{:n}]", indent, spdlog::to_hex(pMsg->Data, pMsg->Data+pMsg->DataSize));
+        SPDLOG_TRACE("{}pMsg->ExtraDataIndex = {}", indent, pMsg->ExtraDataIndex);
+        SPDLOG_TRACE("{}pMsg->Timestamp = {}", indent, pMsg->Timestamp);
+    }
+}
+
+#if defined ( SIMULATION_MODE )
+static void SetIoCtlOutputValue(unsigned long enumIoctlID, void *pInput, void *pOutput)
+{
+        char buffer[16] = {0};
+
+        switch ( enumIoctlID ) {
+
+            case GET_CONFIG:
+                break;
+
+            case SET_CONFIG:
+                break;
+
+            case READ_VBATT:
+                *(unsigned long*)pOutput = 12;
+                break;
+
+            case FIVE_BAUD_INIT:
+                break;
+
+            case FAST_INIT:
+                break;
+
+#ifdef SET_PIN_USE
+            case SET_PIN_USE:
+                break;
+#endif
+
+            case CLEAR_TX_BUFFER:
+                break;
+
+            case CLEAR_RX_BUFFER:
+                break;
+
+            case CLEAR_PERIODIC_MSGS:
+                break;
+
+            case CLEAR_MSG_FILTERS:
+                break;
+
+            case CLEAR_FUNCT_MSG_LOOKUP_TABLE:
+                break;
+
+            case ADD_TO_FUNCT_MSG_LOOKUP_TABLE:
+                break;
+
+            case DELETE_FROM_FUNCT_MSG_LOOKUP_TABLE:
+                break;
+
+            case READ_PROG_VOLTAGE:
+                break;
+
+            default:
+                //sprintf_s ( buffer, sizeof ( buffer ), "unknow(%ld)", enumIoctlID);
+                break;
+       }
+
+    return;
+}
+#endif
+
+// Global functions ------------------------------------------------------------------------------
 
 BOOL APIENTRY DllMain ( HANDLE hModule,
                         DWORD  ul_reason_for_call,
@@ -473,10 +580,12 @@ BOOL APIENTRY DllMain ( HANDLE hModule,
                       )
 {
 
+    (void)hModule;
+    (void)lpReserved;
+
     switch ( ul_reason_for_call ) {
         case DLL_PROCESS_ATTACH:
             setupLogger();
-            LogMsg1 ( "call DLL_PROCESS_ATTACH\n" );
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
         case DLL_PROCESS_DETACH:
@@ -486,29 +595,29 @@ BOOL APIENTRY DllMain ( HANDLE hModule,
     return TRUE;
 }
 
-void PrintBuffer ( int length, unsigned char *data )
-{
-    char buffer[1024];
-    char buffer2[1024];
-    int i;
+//void PrintBuffer ( int length, unsigned char *data )
+//{
+//    char buffer[1024];
+//    char buffer2[1024];
+//    int i;
 
-    if ( data == NULL ) { return; }
+//    if ( data == NULL ) { return; }
 
-    if ( length == 0 ) { return; }
+//    if ( length == 0 ) { return; }
 
 
-    memset ( buffer, 0, sizeof ( buffer ) );
-    memset ( buffer2, 0, sizeof ( buffer2 ) );
+//    memset ( buffer, 0, sizeof ( buffer ) );
+//    memset ( buffer2, 0, sizeof ( buffer2 ) );
 
-    for ( i = 0; i < length; i++ ) {
+//    for ( i = 0; i < length; i++ ) {
 
-        sprintf_s ( buffer2, sizeof ( buffer2 ), "0x%02x ", *data++ );
+//        sprintf_s ( buffer2, sizeof ( buffer2 ), "0x%02x ", *data++ );
 
-        strcat_s ( buffer, sizeof ( buffer ), buffer2 );
-    }
+//        strcat_s ( buffer, sizeof ( buffer ), buffer2 );
+//    }
 
-    LogMsg1 ( buffer );
-}
+//    LogMsg1 ( buffer );
+//}
 
 // Declaration of Exported functions.
 
@@ -637,7 +746,7 @@ int Load_J2534DLL ( void )
     stPassThrough *pPtr;
     //load the real dll (change to registry key, or popup dialog
 
-    LogMsg1 ( "Load_J2534DLL\n" );
+    SPDLOG_TRACE("Load_J2534DLL");
 
     // SCANDAQ
     //allocate some memory
@@ -662,6 +771,8 @@ int Load_J2534DLL ( void )
 
 static inline stPassThrough *GetGlobalstPassThrough(unsigned long ChannelID)
 {
+    (void)ChannelID;
+
     stPassThrough *pPtr = pGlobalPtr;
 //    stPassThrough *pPtr = ( stPassThrough* ) ChannelID ;
     
@@ -670,43 +781,21 @@ static inline stPassThrough *GetGlobalstPassThrough(unsigned long ChannelID)
 
 JTYPE  PassThruOpen ( void* pName, unsigned long * pDeviceID )
 {
+#pragma FUNC_EXPORT
 
-    #pragma FUNC_EXPORT
+    SPDLOG_TRACE("PassThruOpen(pName = {}, pDeviceID = 0x{:x})", pName?(char *)pName:"null", (uint32_t)pDeviceID);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
     stPassThrough *pPtr = STATUS_NOERROR ;
-    {
-        char buffer[1024];
-
-        sprintf_s ( buffer, sizeof ( buffer ), "PassThruOpen(%s,0x%lx)\n", pName, pDeviceID );
-        LogMsg1 ( buffer );
-    }
-
-
     if ( pPtr == NULL )
-    { Load_J2534DLL(); }
-
-	{
-		char buffer[128];
-	
-		sprintf_s(buffer, sizeof(buffer), "dll has been loaded, %lx, %lx\n", pGlobalPtr, pGlobalPtr->data.pPassThruOpen);
-		LogMsg1 (buffer);
-	}
-	
+    {
+        Load_J2534DLL();
+    }
 
     if ( pGlobalPtr && pGlobalPtr->data.pPassThruOpen ) {
 		pPtr = pGlobalPtr;
         ret = ( J2534ERROR ) pPtr->data.pPassThruOpen ( pName, pDeviceID );
-
-    	{
-			char buffer[128];
-
-			sprintf_s(buffer, sizeof(buffer), "DeviceID assigned = %ul, ret = %d\n", *pDeviceID, ret);
-			LogMsg1 (buffer);
-        }
-
-        GetJ2534ErrorText ( ret );
     }
 #ifdef F_HIJACK
     else {
@@ -716,31 +805,35 @@ JTYPE  PassThruOpen ( void* pName, unsigned long * pDeviceID )
     }
 #endif
 
+    SPDLOG_TRACE("PassThruOpen exit with deviceId = {}, ret = {}", *pDeviceID, getJ2534ErrorText(ret));
+
     return ret;
 }
 
 
 JTYPE  J2534_SIM_API  PassThruClose ( unsigned long DeviceID )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
+
+    SPDLOG_TRACE("PassThruClose(DeviceID = {})", DeviceID);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
-    LogMsg1 ( "PassThruClose\n" );
-
     if ( pGlobalPtr && pGlobalPtr->data.pPassThruClose ) {
         ret = ( J2534ERROR ) pGlobalPtr->data.pPassThruClose ( DeviceID );
-
-        GetJ2534ErrorText ( ret );
     }
 
-    return ret;
+    SPDLOG_TRACE("PassThruClose exit with deviceId = {}, ret = {}", DeviceID, getJ2534ErrorText(ret));
 
+    return ret;
 }
 
 JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsigned long Flags, unsigned long Baudrate, unsigned long * pChannelID )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
+
+    SPDLOG_TRACE("PassThruConnect(DeviceID = {}, ProtocolID = {}, Flags = 0x{:x}, BaudRate = {}, pChannelID = 0x{:x})",
+                 DeviceID, getJ2534ProtocolText(ProtocolID), Flags, Baudrate, (uint32_t)pChannelID);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = pGlobalPtr ;
@@ -750,19 +843,10 @@ JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsign
         pPtr = pGlobalPtr ;
     }
 
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruConnect 0404: DeviceID = %ul, ProtocolID = %d, Flags =%d, BaudRate = %d\n", DeviceID, ProtocolID, Flags, Baudrate );
-    LogMsg1 ( buffer );
-
-    LogMsg2 ( "protocol = %s\n", GetJ2534_PROTOCOLText ( ( J2534_PROTOCOL ) ProtocolID ) );
-
     if ( pPtr && pPtr->data.pPassThruConnect )	{
-        LogMsg1 ( "pPtr->data.pPassThruConnect != NULL\n" );
         ret = ( J2534ERROR ) pPtr->data.pPassThruConnect ( DeviceID, ProtocolID, Flags, Baudrate, &pPtr->ulChannel );
     }
-
     else {
-
         pPtr->ulChannel = 0;
     }
 
@@ -776,29 +860,22 @@ JTYPE PassThruConnect ( unsigned long DeviceID, unsigned long ProtocolID, unsign
     }
 #endif
 
-    sprintf_s(buffer, sizeof(buffer), "ChannelID assigned = %d\n", *pChannelID);
-    LogMsg1 (buffer);
+    SPDLOG_TRACE("PassThruConnect assigned channelID = {}, ret = {}", *pChannelID, getJ2534ErrorText(ret));
 
     return ret;
 }
 
 JTYPE PassThruDisconnect ( unsigned long ChannelID )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    //LogMsg1("PassThruDisconnect\n");
-#endif
+    SPDLOG_TRACE("PassThruDisconnect(ChannelID = {})", ChannelID);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
 
     if ( pPtr )
     { ChannelID = pPtr->ulChannel; }
-
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruDisconnect : ChannelID = %d\n", ChannelID );
-    LogMsg1 ( buffer );
 
     pPtr = pGlobalPtr;
 
@@ -807,17 +884,17 @@ JTYPE PassThruDisconnect ( unsigned long ChannelID )
         ret = ( J2534ERROR ) pPtr->data.pPassThruDisconnect ( ChannelID );
     }
 
-    return ret;
+    SPDLOG_TRACE("PassThruClose exit with ret = {}", getJ2534ErrorText(ret));
 
+    return ret;
 }
 
 JTYPE PassThruReadMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned long * pNumMsgs, unsigned long Timeout )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    //LogMsg1("PassThruReadMsgs\n");
-#endif
+    SPDLOG_TRACE("PassThruReadMsgs(ChannelID = {}, N = {}, T = {})",
+                 ChannelID, *pNumMsgs, Timeout);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
@@ -826,10 +903,6 @@ JTYPE PassThruReadMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned 
     if ( pPtr ) {
         ChannelID = pPtr->ulChannel;
     }
-
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruReadMsgs : ChannelID = %lu, N = %lu, T=%lu\n", ChannelID, *pNumMsgs, Timeout );
-    LogMsg1 ( buffer );
 
     pPtr = pGlobalPtr;
 
@@ -837,61 +910,39 @@ JTYPE PassThruReadMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned 
 
         //	Sleep(20);
         ret = ( J2534ERROR ) pPtr->data.pPassThruReadMsgs ( ChannelID, pMsg, pNumMsgs, Timeout );
-		sprintf_s ( buffer, sizeof ( buffer ), "PassThruReadMsgs : ret = %d, N = %lu\n", ret, *pNumMsgs );
-    	LogMsg1 ( buffer );
+
+        SPDLOG_TRACE("DLL's PassThruReadMsgs return ret = {}, N = {}", ret, *pNumMsgs);
     }
 
     if ( ret == J2534_STATUS_NOERROR && pMsg->ulDataSize ) {
-
-        sprintf_s ( buffer, sizeof ( buffer ), "pMSg(%d,0x%lx,%d,%d)\n", ChannelID, pMsg, *pNumMsgs, Timeout );
-        LogMsg1 ( buffer );
-        LogMsg2 ( "\tprotocol    = %s\n", GetJ2534_PROTOCOLText ( ( J2534_PROTOCOL ) pMsg->ProtocolID ) );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\trx status   = %lu\n", pMsg->RxStatus );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\ttx flags    = %lu\n", pMsg->TxFlags );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\ttime stamp  = %lu\n", pMsg->Timestamp );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\textra data  = %lu\n", pMsg->ExtraDataIndex );
-        LogMsg1 ( buffer );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\tdata size   = %lu\n", pMsg->DataSize );
-        LogMsg1 ( buffer );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\tdata        = 0x%lx = { ", pMsg->Data );
-        LogMsg1 ( buffer );
-        PrintBuffer ( pMsg->DataSize, &pMsg->Data[0] );
-        LogMsg1 ( "}\n" );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\textradata        = 0x%lx = { ", pMsg->Data );
-        LogMsg1 ( buffer );
-        PrintBuffer ( pMsg->DataSize, &pMsg->Data[pMsg->ExtraDataIndex] );
-        LogMsg1 ( "}\n" );
-
-    } else
-        if ( ret != ERR_BUFFER_EMPTY ) {
-            GetJ2534ErrorText ( ret );
-
-        } else {
-//		LogMsg1("");
-
-
+        SPDLOG_TRACE("PassThruReadMsgs has been read {} messages", *pNumMsgs);
+        for (unsigned long i = 0; i < *pNumMsgs; i++) {
+            SPDLOG_TRACE("> pMsg[{}]:", i);
+            printPASSTHRU_MSG(pMsg+i);
         }
+    } else if ( ret != ERR_BUFFER_EMPTY ) {
 
+    } else {
+
+    }
+
+    SPDLOG_TRACE("PassThruReadMsgs exit with ret = {}", getJ2534ErrorText(ret));
     return ret;
 
 }
 
 JTYPE PassThruWriteMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned long * pNumMsgs, unsigned long Timeout )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
+
+    SPDLOG_TRACE("PassThruWriteMsgs(ChannelID = {}, *pNumMsgs = {}, Timeout = {})",
+                 ChannelID, *pNumMsgs, Timeout);
+    for (unsigned long i = 0; i < *pNumMsgs; i++) {
+        SPDLOG_TRACE("> pMsg[{}]:", i);
+        printPASSTHRU_MSG(pMsg+i);
+    }
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
-
-#ifdef F_HIJACK
-    LogMsg1("PassThruWriteMsgs\n");
-#endif
 
     stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
 
@@ -899,60 +950,20 @@ JTYPE PassThruWriteMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned
         ChannelID = pPtr->ulChannel;
     }
 
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruWriteMsgs : ChannelID = %d\n", ChannelID );
-    LogMsg1 ( buffer );
-
     pPtr = pGlobalPtr;
-
-
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruWriteMsgs(%d,0x%lx,%d,%d)\n", ChannelID, pMsg, *pNumMsgs, Timeout );
-    LogMsg1 ( buffer );
-
-    LogMsg2 ( "\tprotocol    = %s\n", GetJ2534_PROTOCOLText ( ( J2534_PROTOCOL ) pMsg->ProtocolID ) );
-
-
-// not used for write
-
-//	_RPT1(_CRT_WARN,"\tex data ind = %lu\n",pMsg->ExtraDataIndex);
-//	_RPT1(_CRT_WARN,"\ttimestamp   = %lu\n",pMsg->TimeStamp);
-
-
-    sprintf_s ( buffer, sizeof ( buffer ), "\trx status   = %lu\n", pMsg->RxStatus );
-    LogMsg1 ( buffer );
-    sprintf_s ( buffer, sizeof ( buffer ), "\ttx flags    = %lu\n", pMsg->TxFlags );
-    LogMsg1 ( buffer );
-    sprintf_s ( buffer, sizeof ( buffer ), "\ttime stamp  = %lu\n", pMsg->Timestamp );
-    LogMsg1 ( buffer );
-    sprintf_s ( buffer, sizeof ( buffer ), "\textra data  = %lu\n", pMsg->ExtraDataIndex );
-    LogMsg1 ( buffer );
-
-    sprintf_s ( buffer, sizeof ( buffer ), "\tdata size   = %lu\n", pMsg->DataSize );
-    LogMsg1 ( buffer );
-    sprintf_s ( buffer, sizeof ( buffer ), "\tdata        = 0x%lx = { ", pMsg->Data );
-    LogMsg1 ( buffer );
-
-    if ( pMsg->Data != NULL ) {
-
-
-        PrintBuffer ( pMsg->DataSize, &pMsg->Data[0] );
-
-        PrintBuffer ( pMsg->DataSize, &pMsg->Data[pMsg->ExtraDataIndex] );
-
-    }
-
-    LogMsg1 ( "}\n" );
 
     if ( pPtr && pPtr->data.pPassThruWriteMsgs ) {
 
 //		Sleep( 10 );
+        SPDLOG_TRACE("DLL's PassThruWriteMsgs(ChannelID = {}, *pNumMsgs = {}, Timeout = {})",
+                     ChannelID, *pNumMsgs, Timeout);
 
         ret = ( J2534ERROR ) pPtr->data.pPassThruWriteMsgs ( ChannelID, pMsg, pNumMsgs, Timeout );
 
-		sprintf_s ( buffer, sizeof ( buffer ), "PassThruWriteMsgs : ret = %d, N = %lu\n", ret, *pNumMsgs );
-		LogMsg1 ( buffer );
-
+        SPDLOG_TRACE("DLL's PassThruWriteMsgs ret = {}, N = {}", getJ2534ErrorText(ret), *pNumMsgs);
     }
+
+    SPDLOG_TRACE("PassThruWriteMsgs ret = {}, N = {}", getJ2534ErrorText(ret), *pNumMsgs);
 
     return ret;
 }
@@ -960,11 +971,12 @@ JTYPE PassThruWriteMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned
 JTYPE PassThruStartPeriodicMsg ( unsigned long ChannelID, PASSTHRU_MSG * pMsg,
                                  unsigned long * pMsgID, unsigned long TimeInterval )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    LogMsg1("PassThruStartPeriodicMsg\n");
-#endif
+    SPDLOG_TRACE("PassThruStartPeriodicMsg(ChannelID = {}, TimeInterval = {})",
+                 ChannelID, TimeInterval);
+    SPDLOG_TRACE("> pMsg:");
+    printPASSTHRU_MSG(pMsg);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
@@ -974,49 +986,46 @@ JTYPE PassThruStartPeriodicMsg ( unsigned long ChannelID, PASSTHRU_MSG * pMsg,
         ChannelID = pPtr->ulChannel;
     }
 
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruStartPeriodicMsg : ChannelID = %d\n", ChannelID );
-    LogMsg1 ( buffer );
-
     pPtr = pGlobalPtr;
 
-    LogMsg1 ( "PassThruStartPeriodicMsg" );
-
     if ( pPtr && pPtr->data.pPassThruStartPeriodicMsg ) {
+        SPDLOG_TRACE("DLL's PassThruStartPeriodicMsg(ChannelID = {}, TimeInterval = {})",
+                     ChannelID, TimeInterval);
+
         ret = ( J2534ERROR ) pPtr->data.pPassThruStartPeriodicMsg ( ChannelID, pMsg, pMsgID, TimeInterval );
+
+        SPDLOG_TRACE("DLL's PassThruStartPeriodicMsg ret = {}", getJ2534ErrorText(ret));
     }
 
-    GetJ2534ErrorText ( ret );
+    SPDLOG_TRACE("PassThruStartPeriodicMsg ret = {}", getJ2534ErrorText(ret));
 
     return ret;
 }
 
 JTYPE PassThruStopPeriodicMsg ( unsigned long ChannelID, unsigned long MsgID )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    LogMsg1("PassThruStopPeriodicMsg\n");
-#endif
+    SPDLOG_TRACE("PassThruStopPeriodicMsg(ChannelID = {}, MsgID = {})",
+                 ChannelID, MsgID);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
     stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
     ChannelID = pPtr->ulChannel;
 
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruStopPeriodicMsg : ChannelID = %d\n", ChannelID );
-    LogMsg1 ( buffer );
-
     pPtr = pGlobalPtr;
 
-    LogMsg1 ( "PassThruStartPeriodicMsg" );
-
     if ( pPtr && pPtr->data.pPassThruStopPeriodicMsg ) {
+        SPDLOG_TRACE("DLL's PassThruStopPeriodicMsg(ChannelID = {}, MsgID = {})",
+                     ChannelID, MsgID);
+
         ret = ( J2534ERROR ) pPtr->data.pPassThruStopPeriodicMsg ( ChannelID, MsgID );
+
+        SPDLOG_TRACE("DLL's PassThruStopPeriodicMsg ret = {}", getJ2534ErrorText(ret));
     }
 
-    GetJ2534ErrorText ( ret );
+    SPDLOG_TRACE("PassThruStopPeriodicMsg ret = {}", getJ2534ErrorText(ret));
 
     return ret;
 }
@@ -1027,9 +1036,13 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
 {
     #pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    LogMsg1("PassThruStartMsgFilter\n");
-#endif
+    SPDLOG_TRACE("PassThruStartMsgFilter(ChannelID = {}, FilterType = {})", ChannelID, FilterType);
+    SPDLOG_TRACE("> pMaskMsg:");
+    printPASSTHRU_MSG(pMsg);
+    SPDLOG_TRACE("> pPatternMsg:");
+    printPASSTHRU_MSG(pPatternMsg);
+    SPDLOG_TRACE("> pFlowControlMsg:");
+    printPASSTHRU_MSG(pFlowControlMsg);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID );
@@ -1038,141 +1051,34 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
         ChannelID = pPtr->ulChannel;
     }
 
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruStartMsgFilter : ChannelID = %d\n", ChannelID );
-    LogMsg1 ( buffer );
-
-    sprintf_s ( buffer, sizeof ( buffer ), "FilterType = %d\n", FilterType );
-    LogMsg1 ( buffer );
-
-    if ( pMsg ) {
-        LogMsg1 ( "MaskMsg\n" );
-        sprintf_s ( buffer, sizeof ( buffer ), "ProtocolID = %d\n", pMsg->ProtocolID );
-        LogMsg1 ( buffer );
-
-        LogMsg2 ( "\tprotocol    = %s\n", GetJ2534_PROTOCOLText ( ( J2534_PROTOCOL ) pMsg->ProtocolID ) );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\trx status   = %lu\n", pMsg->RxStatus );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\ttx flags    = %lu\n", pMsg->TxFlags );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\ttime stamp  = %lu\n", pMsg->Timestamp );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\textra data  = %lu\n", pMsg->ExtraDataIndex );
-        LogMsg1 ( buffer );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\tdata size   = %lu\n", pMsg->DataSize );
-        LogMsg1 ( buffer );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\tdata        = 0x%lx = { ", pMsg->Data );
-        LogMsg1 ( buffer );
-        PrintBuffer ( pMsg->DataSize, &pMsg->Data[0] );
-        LogMsg1 ( "}\n" );
-
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\textradata   = 0x%lx = { ", pMsg->Data );
-        LogMsg1 ( buffer );
-#ifdef F_HIJACK
-        // GDS request with a wrong value which is large, so we prevent from the problem by temporary.
-        if (pMsg->ExtraDataIndex < 20)
-#endif        
-        PrintBuffer ( pMsg->ExtraDataIndex, &pMsg->Data[pMsg->ExtraDataIndex] );
-        LogMsg1 ( "}\n" );
-    }
-
-    if ( pPatternMsg ) {
-        LogMsg1 ( "pPatternMsg\n" );
-        LogMsg2 ( "\tprotocol    = %s\n", GetJ2534_PROTOCOLText ( ( J2534_PROTOCOL ) pPatternMsg->ProtocolID ) );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\trx status   = %lu\n", pPatternMsg->RxStatus );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\ttx flags    = %lu\n", pPatternMsg->TxFlags );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\ttime stamp  = %lu\n", pPatternMsg->Timestamp );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\textra data  = %lu\n", pPatternMsg->ExtraDataIndex );
-        LogMsg1 ( buffer );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\tdata size   = %lu\n", pPatternMsg->DataSize );
-        LogMsg1 ( buffer );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\tdata        = 0x%lx = { ", pPatternMsg->Data );
-        LogMsg1 ( buffer );
-        PrintBuffer ( pPatternMsg->DataSize, &pPatternMsg->Data[0] );
-        LogMsg1 ( "}\n" );
-
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\textradata   = 0x%lx = { ", pPatternMsg->Data );
-        LogMsg1 ( buffer );
-#ifdef F_HIJACK
-        // GDS request with a wrong value which is large, so we prevent from the problem by temporary.
-        if (pPatternMsg->ExtraDataIndex < 20)
-#endif
-        PrintBuffer ( pPatternMsg->ExtraDataIndex, &pPatternMsg->Data[pPatternMsg->ExtraDataIndex] );
-        LogMsg1 ( "}\n" );
-    }
-
-    if ( pFlowControlMsg ) {
-        LogMsg1 ( "pFlowControlMsg\n" );
-        LogMsg2 ( "\tprotocol    = %s\n", GetJ2534_PROTOCOLText ( ( J2534_PROTOCOL ) pFlowControlMsg->ProtocolID ) );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\trx status   = %lu\n", pFlowControlMsg->RxStatus );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\ttx flags    = %lu\n", pFlowControlMsg->TxFlags );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\ttime stamp  = %lu\n", pFlowControlMsg->Timestamp );
-        LogMsg1 ( buffer );
-        sprintf_s ( buffer, sizeof ( buffer ), "\textra data  = %lu\n", pFlowControlMsg->ExtraDataIndex );
-        LogMsg1 ( buffer );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\tdata size   = %lu\n", pFlowControlMsg->DataSize );
-        LogMsg1 ( buffer );
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\tdata        = 0x%lx = { ", pFlowControlMsg->Data );
-        LogMsg1 ( buffer );
-        PrintBuffer ( pFlowControlMsg->DataSize, &pFlowControlMsg->Data[0] );
-        LogMsg1 ( "}\n" );
-
-
-        sprintf_s ( buffer, sizeof ( buffer ), "\textradata   = 0x%lx = { ", pFlowControlMsg->Data );
-        LogMsg1 ( buffer );
-#ifdef F_HIJACK
-        // GDS request with a wrong value which is large, so we prevent from the problem by temporary.
-        if (pFlowControlMsg->ExtraDataIndex < 20)
-#endif
-        PrintBuffer ( pFlowControlMsg->ExtraDataIndex, &pFlowControlMsg->Data[pFlowControlMsg->ExtraDataIndex] );
-        LogMsg1 ( "}\n" );
-    }
-
 #if !defined ( SIMULATION_MODE )
 
     if ( pPtr && pPtr->data.pPassThruStartMsgFilter ) {
+
+        SPDLOG_TRACE("DLL's PassThruStartMsgFilter(ChannelID = {}, FilterType = {})", ChannelID, FilterType);
+
         ret = ( J2534ERROR ) pPtr->data.pPassThruStartMsgFilter ( pPtr->ulChannel, FilterType,
                 pMsg, pPatternMsg, pFlowControlMsg, pMsgID );
+
+        SPDLOG_TRACE("DLL's PassThruStartMsgFilter ret = {}, FilterID = {}", getJ2534ErrorText(ret), *pMsgID);
     }
 
 #else
     ret  = 0;
 #endif
 
-    GetJ2534ErrorText ( ret );
+    SPDLOG_TRACE("PassThruStartMsgFilter ret = {}, FilterID = {}", getJ2534ErrorText(ret), *pMsgID);
 
     return ret;
 }
 
 JTYPE PassThruStopMsgFilter ( unsigned long ChannelID, unsigned long ulFilterID )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    LogMsg1("PassThruStopMsgFilter\n");
-#endif
+    SPDLOG_TRACE("PassThruStopMsgFilter(ChannelID = {}, FilterID = {})", ChannelID, ulFilterID);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
-
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruStopMsgFilter : ChannelID = %d, MsgID = %d\n", ChannelID, ulFilterID );
-    LogMsg1 ( buffer );
 
 #if !defined ( SIMULATION_MODE )
 
@@ -1184,31 +1090,27 @@ JTYPE PassThruStopMsgFilter ( unsigned long ChannelID, unsigned long ulFilterID 
 
 
     if ( pPtr ) {
-        ret = ( J2534ERROR ) pPtr->data.pPassThruStopMsgFilter ( pPtr->ulChannel, ulFilterID );
-    }
+        SPDLOG_TRACE("DLL's PassThruStopMsgFilter(ChannelID = {}, FilterID = {})", ChannelID, ulFilterID);
 
-    GetJ2534ErrorText ( ret );
+        ret = ( J2534ERROR ) pPtr->data.pPassThruStopMsgFilter ( pPtr->ulChannel, ulFilterID );
+
+        SPDLOG_TRACE("DLL's PassThruStopMsgFilter ret = {}", getJ2534ErrorText(ret));
+    }
 
 #endif
 
-
+    SPDLOG_TRACE("PassThruStopMsgFilter ret = {}", getJ2534ErrorText(ret));
 
     return ret;
 }
 
 JTYPE PassThruSetProgrammingVoltage ( unsigned long DeviceID, unsigned long Pin, unsigned long Voltage )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    LogMsg1("PassThruSetProgrammingVoltage\n");
-#endif
+    SPDLOG_TRACE("PassThruSetProgrammingVoltage(DeviceID = {}, Pin = {}, Voltage = {})", DeviceID, Pin, Voltage);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruSetProgrammingVoltage : DeviceID = %d, Pin = %d, Voltage = %d\n", DeviceID, Pin, Voltage );
-    LogMsg1 ( buffer );
-
 
 #if !defined ( SIMULATION_MODE )
 
@@ -1218,41 +1120,29 @@ JTYPE PassThruSetProgrammingVoltage ( unsigned long DeviceID, unsigned long Pin,
         ret = ( J2534ERROR ) pPtr->data.pPassThruSetProgrammingVoltage ( DeviceID, Pin, Voltage );
     }
 
-    GetJ2534ErrorText ( ret );
-
 #endif
 
-
-
+    SPDLOG_TRACE("PassThruSetProgrammingVoltage ret = {}", getJ2534ErrorText(ret));
 
     return ret;
 }
 
 JTYPE PassThruReadVersion ( unsigned long DeviceID, char *pchFirmwareVersion, char *pchDllVersion, char *pchApiVersion )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    LogMsg1("PassThruReadVersion\n");
-#endif
+    SPDLOG_TRACE("PassThruReadVersion(DeviceID = {})", DeviceID);
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = pGlobalPtr ;
-
-    char buffer[1024];
-    sprintf_s ( buffer, sizeof ( buffer ), "PassThruReadVersion : DeviceID = %ul\n", DeviceID );
-    LogMsg1 ( buffer );
 
 #if !defined ( SIMULATION_MODE )
 
     if ( pPtr && pPtr->data.pPassThruReadVersion ) {
         ret = ( J2534ERROR ) pPtr->data.pPassThruReadVersion ( DeviceID, pchFirmwareVersion, pchDllVersion, pchApiVersion );
 
-        LogMsg1 ( pchFirmwareVersion );
-        LogMsg1 ( pchDllVersion );
-        LogMsg1 ( pchApiVersion );
-		LogMsg1 ("\n");
-
+        SPDLOG_TRACE("DLL's PassThruReadVersion ret = {}, Firmware = {}, Dll = {}, Api = {})",
+                     getJ2534ErrorText(ret), pchFirmwareVersion, pchDllVersion, pchApiVersion);
     }
 
     else {
@@ -1272,6 +1162,8 @@ JTYPE PassThruReadVersion ( unsigned long DeviceID, char *pchFirmwareVersion, ch
 
 #endif
 
+    SPDLOG_TRACE("PassThruReadVersion ret = {}, Firmware = {}, Dll = {}, Api = {})",
+                 getJ2534ErrorText(ret), pchFirmwareVersion, pchDllVersion, pchApiVersion);
 
     return ret;;
 
@@ -1280,131 +1172,67 @@ JTYPE PassThruReadVersion ( unsigned long DeviceID, char *pchFirmwareVersion, ch
 
 JTYPE PassThruGetLastError ( char *pErrorDescription )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
+
+    SPDLOG_TRACE("PassThruGetLastError()");
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
+    stPassThrough *pPtr = pGlobalPtr;
 
+    if ( pPtr && pPtr->data.pPassThruGetLastError ) {
+        ret = ( J2534ERROR ) pPtr->data.pPassThruGetLastError ( pErrorDescription );
+
+        SPDLOG_TRACE("DLL's PassThruGetLastError ret = {}, pErrorDescription = {})",
+                     getJ2534ErrorText(ret), pErrorDescription);
+    }
+
+    SPDLOG_TRACE("PassThruGetLastError ret = {}, pErrorDescription = {})",
+                 getJ2534ErrorText(ret), pErrorDescription);
     return ret;
-}
-
-static void SetIoCtlOutputValue(unsigned long enumIoctlID, void *pInput, void *pOutput)
-{
-        char buffer[16] = {0};
-    
-        switch ( enumIoctlID ) {
-    
-            case GET_CONFIG:
-                break;
-    
-            case SET_CONFIG:
-                break;
-    
-            case READ_VBATT:
-                *(unsigned long*)pOutput = 12;
-                break;
-    
-            case FIVE_BAUD_INIT:
-                break;
-    
-            case FAST_INIT:
-                break;
-    
-#ifdef SET_PIN_USE
-            case SET_PIN_USE:
-                break;
-#endif
-    
-            case CLEAR_TX_BUFFER:
-                break;
-    
-            case CLEAR_RX_BUFFER:
-                break;
-    
-            case CLEAR_PERIODIC_MSGS:
-                break;
-    
-            case CLEAR_MSG_FILTERS:
-                break;
-    
-            case CLEAR_FUNCT_MSG_LOOKUP_TABLE:
-                break;
-    
-            case ADD_TO_FUNCT_MSG_LOOKUP_TABLE:
-                break;
-    
-            case DELETE_FROM_FUNCT_MSG_LOOKUP_TABLE:
-                break;
-    
-            case READ_PROG_VOLTAGE:
-                break;
-    
-            default:
-                //sprintf_s ( buffer, sizeof ( buffer ), "unknow(%ld)", enumIoctlID);
-                break;
-       }
-
-    return;
 }
 
 JTYPE PassThruIoctl ( unsigned long ChannelID, unsigned long IoctlID,
                       void *pInput, void *pOutput )
 {
-    #pragma FUNC_EXPORT
+#pragma FUNC_EXPORT
 
-#ifdef F_HIJACK
-    //LogMsg1("PassThruIoctl\n");
-#endif
+    SPDLOG_TRACE("PassThruIoctl(ChannelID = {}, IoctlID = {}, pInput = 0x{:x}, pOutput = 0x{:x})",
+                 ChannelID, getJ2534IoctlIdText(IoctlID), reinterpret_cast<std::size_t>(pInput), reinterpret_cast<std::size_t>(pOutput));
 
-    int ret;
-
+    J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID ) ;
 
     //if ( pPtr ) {
     //    ChannelID = pPtr->ulChannel;
     //}
 
-
-    {
-        char buffer[1024];
-
-        sprintf_s ( buffer, sizeof ( buffer ), "PassThruIoctl(%ul,%s,0x%lx,0x%lx)\n", ChannelID, GetJ2534IOCTLIDText ( IoctlID ), pInput, pOutput );
-        LogMsg1 ( buffer );
-    }
-
 #if !defined ( SIMULATION_MODE )
 
     if ( pPtr && pPtr->data.pPassThruIoctl ) {
-        char buffer[1024];
+        SPDLOG_TRACE("DLL's PassThruIoctl(ChannelID = {}, IoctlID = {}, pInput = 0x{:x}, pOutput = 0x{:x})",
+                     ChannelID, getJ2534IoctlIdText(IoctlID), reinterpret_cast<std::size_t>(pInput), reinterpret_cast<std::size_t>(pOutput));
+
         
         ret = ( J2534ERROR ) pPtr->data.pPassThruIoctl ( ChannelID, IoctlID, pInput, pOutput );
         
-        sprintf_s ( buffer, sizeof ( buffer ), "%d = pPassThruIoctl()\n", ret );
-        LogMsg1 ( buffer );
-
-        GetJ2534ErrorText ( ret );
-
+        SPDLOG_TRACE("DLL's PassThruIoctl ret = {}", getJ2534ErrorText(ret));
         if (pInput) {
             auto sconfigs = reinterpret_cast<SCONFIG_LIST *>(pInput);
             for (unsigned long i = 0; i < sconfigs->NumOfParams; i++) {
-				auto configPtr = sconfigs->ConfigPtr + i;
-				if (configPtr) {
-                	char buffer[128];
-                	sprintf_s ( buffer, sizeof ( buffer ), "output pInput[%lu] P = %lu, v = %lu\n", i, configPtr->Parameter, configPtr->Value);
-                	LogMsg1 ( buffer );
-				}
+                SPDLOG_TRACE("pInput SCONFIG.Parameter = {}, Value = {}",
+                             sconfigs->ConfigPtr[i].Parameter, sconfigs->ConfigPtr[i].Value);
             }
         }
         if (pOutput) {
-                char buffer[128];
-                sprintf_s ( buffer, sizeof ( buffer ), "output *pOutput = %lu\n", *reinterpret_cast<unsigned long *>(pOutput));
-                LogMsg1 ( buffer );
+                SPDLOG_TRACE("pOutput Value = {}", *reinterpret_cast<unsigned long *>(pOutput));
         }
+
     }
 #else
     SetIoCtlOutputValue(IoctlID, NULL, pOutput);
 #endif
 
-
+    SPDLOG_TRACE("PassThruIoctl ret = {}", getJ2534ErrorText(ret));
     return ret;
 }
 
@@ -1422,143 +1250,146 @@ static int Load_J2534DLL (  const char *szLibrary, globData * data )
     /**********************************************************************/
 
     if ( ( hDLL = LoadLibraryA ( szLibrary ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot load %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot load {}", szLibrary);
         return ( FAIL );
     }
 
     /// 0404
     if ( ( data->pPassThruOpen = ( PTOPEN ) GetProcAddress ( hDLL, "PassThruOpen" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruOpen function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruOpen function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruClose = ( PTCLOSE ) GetProcAddress ( hDLL, "PassThruClose" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruClose function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruClose function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruConnect = ( PTCONNECT ) GetProcAddress ( hDLL, "PassThruConnect" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruConnect function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruConnect function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruDisconnect = ( PTDISCONNECT ) GetProcAddress ( hDLL, "PassThruDisconnect" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruDisconnect function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruDisconnect function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruReadMsgs = ( PTREADMSGS ) GetProcAddress ( hDLL, "PassThruReadMsgs" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruReadMsgs function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruReadMsgs function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruWriteMsgs = ( PTWRITEMSGS ) GetProcAddress ( hDLL, "PassThruWriteMsgs" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruWriteMsgs function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruWriteMsgs function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruStartPeriodicMsg = ( PTSTARTPERIODICMSG ) GetProcAddress ( hDLL, "PassThruStartPeriodicMsg" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruStartPeriodicMsg function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruStartPeriodicMsg function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruStopPeriodicMsg = ( PTSTOPPERIODICMSG ) GetProcAddress ( hDLL, "PassThruStopPeriodicMsg" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruStopPeriodicMsg function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruStopPeriodicMsg function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruStartMsgFilter = ( PTSTARTMSGFILTER ) GetProcAddress ( hDLL, "PassThruStartMsgFilter" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruStartMsgFilter function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruStartMsgFilter function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruStopMsgFilter = ( PTSTOPMSGFILTER ) GetProcAddress ( hDLL, "PassThruStopMsgFilter" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruStopMsgFilter function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruStopMsgFilter function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruSetProgrammingVoltage = ( PTSETPROGRAMMINGVOLTAGE ) GetProcAddress ( hDLL, "PassThruSetProgrammingVoltage" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruSetProgrammingVoltage function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruSetProgrammingVoltage function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruReadVersion = ( PTREADVERSION ) GetProcAddress ( hDLL, "PassThruReadVersion" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruReadVersion function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruReadVersion function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruGetLastError = ( PTGETLASTERROR ) GetProcAddress ( hDLL, "PassThruGetLastError" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruGetLastError function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruGetLastError function in {}", szLibrary);
         return ( FAIL );
     }
 
     if ( ( data->pPassThruIoctl = ( PTIOCTL ) GetProcAddress ( hDLL, "PassThruIoctl" ) ) == NULL ) {
-        LogMsg2 ( "ERROR: Cannot find PassThruIoctl function in %s\n", szLibrary );
+        SPDLOG_TRACE("ERROR: Cannot find PassThruIoctl function in {}", szLibrary);
         return ( FAIL );
     }
+
+    SPDLOG_TRACE("DLL {} is loaded successfully", szLibrary);
 
     return ( PASS );
 }
 
 JTYPE PassThruExConfigureWiFi ( void )
 {
-    LogMsg1 ( "PassThruExConfigureWiFi" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
+
     __asm int 3
 
     return 0;
 }
 JTYPE PassThruExDeviceWatchdog ( void )
 {
-    LogMsg1 ( "PassThruExDeviceWatchdog" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
     __asm int 3
     return 0;
 }
 
 JTYPE PassThruExDownloadCypheredFlashData ( void )
 {
-    LogMsg1 ( "PassThruExDownloadCypheredFlashData" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
     __asm int 3
     return 0;
 }
 
 JTYPE PassThruExEraseFlash ( void )
 {
-    LogMsg1 ( "PassThruExEraseFlash" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
     __asm int 3
     return 0;
 }
 
 JTYPE PassThruExInitiateCypheredFlashDownload ( void )
 {
-    LogMsg1 ( "" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
     __asm int 3
     return 0;
 }
 
 JTYPE PassThruExReadFlash ( void )
 {
-    LogMsg1 ( "PassThruExReadFlash" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
     __asm int 3
     return 0;
 }
 
 JTYPE PassThruExResetFlash ( void )
 {
-    LogMsg1 ( "PassThruExResetFlash" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
     __asm int 3
     return 0;
 }
 
 JTYPE PassThruExRunSelfTest ( void )
 {
-    LogMsg1 ( "PassThruExRunSelfTest" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
     __asm int 3
     return 0;
 }
 
 JTYPE PassThruExWriteFlash ( void )
 {
-    LogMsg1 ( "PassThruExWriteFlash" );
+    SPDLOG_TRACE ( "{}", __FUNCTION__ );
     __asm int 3
     return 0;
 }

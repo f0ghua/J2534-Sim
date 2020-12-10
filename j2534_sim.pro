@@ -6,7 +6,7 @@
 
 #QT       -= core gui
 
-CONFIG += c++11
+CONFIG += c++17
 CONFIG -= qt
 
 TARGET = j2534_sim
