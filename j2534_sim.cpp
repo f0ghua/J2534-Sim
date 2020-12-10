@@ -1,16 +1,4 @@
 #include "StdAfx.h"
-
-#define F_HIJACK
-
-// simple simulation when no hardware
-//#define SIMULATION_MODE 1
-
-#define FAIL	( 0 )
-#define PASS	( 1 )
-
-// where to write a log file too ( c:\ usually needs admin)
-#define LOG_FILE_FILENAME "D:\\j2534_logger.txt"
-
 #include "j2534_sim.h"
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
@@ -31,6 +19,16 @@
 #include <set>
 #include <shlobj.h>
 #include <sstream>
+#include <stdexcept>
+
+#define F_HIJACK
+
+// simple simulation when no hardware
+//#define SIMULATION_MODE 1
+
+#define FAIL	( 0 )
+#define PASS	( 1 )
+
 
 #define J2534_STATUS_NOERROR NO_ERROR
 #define ulDataSize DataSize
@@ -48,6 +46,16 @@
 //helllo have we heard of varags.
 
 //std::shared_ptr<spdlog::logger> kDefaultLogger;
+
+template<typename ... Args>
+std::string string_format( const std::string& format, Args ... args )
+{
+    size_t size = snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
+    if( size <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
+    std::unique_ptr<char[]> buf( new char[ size ] );
+    snprintf( buf.get(), size, format.c_str(), args ... );
+    return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+}
 
 static const std::string localFile(const std::string& fullPath)
 {
@@ -497,17 +505,18 @@ static char const * getJ2534ErrorText ( J2534ERROR err )
     return buffer;
 }
 
-static void printPASSTHRU_MSG(PASSTHRU_MSG *pMsg, char const *indent = "\t\t");
-static void printPASSTHRU_MSG(PASSTHRU_MSG *pMsg, char const *indent)
+static void printPASSTHRU_MSG(PASSTHRU_MSG *pMsg, char const *msgName = "PASSTHRU_MSG:", char const *indent = "  ");
+static void printPASSTHRU_MSG(PASSTHRU_MSG *pMsg, char const *msgName, char const *indent)
 {
     if (pMsg != nullptr) {
-        SPDLOG_TRACE("{}pMsg->ProtocolID = {}", indent, getJ2534ProtocolText(pMsg->ProtocolID));
-        SPDLOG_TRACE("{}pMsg->RxStatus = 0x{:x}", indent, pMsg->RxStatus);
-        SPDLOG_TRACE("{}pMsg->TxFlags = 0x{:x}", indent, pMsg->TxFlags);
-        SPDLOG_TRACE("{}pMsg->DataSize = {}", indent, pMsg->DataSize);
-        SPDLOG_TRACE("{}pMsg->Data = [{:n}]", indent, spdlog::to_hex(pMsg->Data, pMsg->Data+pMsg->DataSize));
-        SPDLOG_TRACE("{}pMsg->ExtraDataIndex = {}", indent, pMsg->ExtraDataIndex);
-        SPDLOG_TRACE("{}pMsg->Timestamp = {}", indent, pMsg->Timestamp);
+        SPDLOG_TRACE("{}{}", indent, msgName);
+        SPDLOG_TRACE("{}{}pMsg->ProtocolID = {}", indent, indent, getJ2534ProtocolText(pMsg->ProtocolID));
+        SPDLOG_TRACE("{}{}pMsg->RxStatus = 0x{:x}", indent, indent, pMsg->RxStatus);
+        SPDLOG_TRACE("{}{}pMsg->TxFlags = 0x{:x}", indent, indent, pMsg->TxFlags);
+        SPDLOG_TRACE("{}{}pMsg->DataSize = {}", indent, indent, pMsg->DataSize);
+        SPDLOG_TRACE("{}{}pMsg->Data = [{:n}]", indent, indent, spdlog::to_hex(pMsg->Data, pMsg->Data+pMsg->DataSize));
+        SPDLOG_TRACE("{}{}pMsg->ExtraDataIndex = {}", indent, indent, pMsg->ExtraDataIndex);
+        SPDLOG_TRACE("{}{}pMsg->Timestamp = {}", indent, indent, pMsg->Timestamp);
     }
 }
 
@@ -917,8 +926,8 @@ JTYPE PassThruReadMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned 
     if ( ret == J2534_STATUS_NOERROR && pMsg->ulDataSize ) {
         SPDLOG_TRACE("PassThruReadMsgs has been read {} messages", *pNumMsgs);
         for (unsigned long i = 0; i < *pNumMsgs; i++) {
-            SPDLOG_TRACE("> pMsg[{}]:", i);
-            printPASSTHRU_MSG(pMsg+i);
+            auto msgName = string_format("pMsg[%lu]", i);
+            printPASSTHRU_MSG(pMsg+i, msgName.c_str());
         }
     } else if ( ret != ERR_BUFFER_EMPTY ) {
 
@@ -938,8 +947,8 @@ JTYPE PassThruWriteMsgs ( unsigned long ChannelID, PASSTHRU_MSG * pMsg, unsigned
     SPDLOG_TRACE("PassThruWriteMsgs(ChannelID = {}, *pNumMsgs = {}, Timeout = {})",
                  ChannelID, *pNumMsgs, Timeout);
     for (unsigned long i = 0; i < *pNumMsgs; i++) {
-        SPDLOG_TRACE("> pMsg[{}]:", i);
-        printPASSTHRU_MSG(pMsg+i);
+        auto msgName = string_format("pMsg[%lu]", i);
+        printPASSTHRU_MSG(pMsg+i, msgName.c_str());
     }
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
@@ -975,8 +984,7 @@ JTYPE PassThruStartPeriodicMsg ( unsigned long ChannelID, PASSTHRU_MSG * pMsg,
 
     SPDLOG_TRACE("PassThruStartPeriodicMsg(ChannelID = {}, TimeInterval = {})",
                  ChannelID, TimeInterval);
-    SPDLOG_TRACE("> pMsg:");
-    printPASSTHRU_MSG(pMsg);
+    printPASSTHRU_MSG(pMsg, "pMsg");
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
 
@@ -1037,12 +1045,9 @@ JTYPE PassThruStartMsgFilter ( unsigned long ChannelID,
     #pragma FUNC_EXPORT
 
     SPDLOG_TRACE("PassThruStartMsgFilter(ChannelID = {}, FilterType = {})", ChannelID, FilterType);
-    SPDLOG_TRACE("> pMaskMsg:");
-    printPASSTHRU_MSG(pMsg);
-    SPDLOG_TRACE("> pPatternMsg:");
-    printPASSTHRU_MSG(pPatternMsg);
-    SPDLOG_TRACE("> pFlowControlMsg:");
-    printPASSTHRU_MSG(pFlowControlMsg);
+    printPASSTHRU_MSG(pMsg, "pMaskMsg");
+    printPASSTHRU_MSG(pPatternMsg, "pPatternMsg");
+    printPASSTHRU_MSG(pFlowControlMsg, "pFlowControlMsg");
 
     J2534ERROR ret = J2534_STATUS_NOERROR;
     stPassThrough *pPtr = GetGlobalstPassThrough( ChannelID );
