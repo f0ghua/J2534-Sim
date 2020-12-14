@@ -893,7 +893,7 @@ JTYPE PassThruDisconnect ( unsigned long ChannelID )
         ret = ( J2534ERROR ) pPtr->data.pPassThruDisconnect ( ChannelID );
     }
 
-    SPDLOG_TRACE("PassThruClose exit with ret = {}", getJ2534ErrorText(ret));
+    SPDLOG_TRACE("PassThruDisconnect exit with ret = {}", getJ2534ErrorText(ret));
 
     return ret;
 }
